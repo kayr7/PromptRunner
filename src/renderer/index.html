@@ -308,6 +308,12 @@
           </div>
           <div class="tab-body">
             <div class="results-panel">
+              <div class="results-view-toggle" style="margin-bottom: 12px; display: flex; gap: 8px; align-items: center;">
+                <span class="label" style="margin-right: 8px;">View</span>
+                <button id="results-view-list" class="btn btn-text" data-view="list">List</button>
+                <button id="results-view-table" class="btn btn-text" data-view="table">Table</button>
+                <button id="results-view-aggregations" class="btn btn-text" data-view="aggregations">Aggregations</button>
+              </div>
               <div class="results-filters">
                 <div class="filter-group">
                   <label for="results-template-filter" class="label">Template</label>
@@ -337,6 +343,24 @@
                     <span class="empty-icon">📈</span>
                     <p>No results yet</p>
                     <p>Execute some prompts to see results here</p>
+                  </div>
+                </div>
+                <div id="results-table" class="data-table hidden">
+                  <table>
+                    <thead>
+                      <tr id="results-table-headers"></tr>
+                    </thead>
+                    <tbody id="results-table-rows"></tbody>
+                  </table>
+                </div>
+                <div id="results-aggregations" class="results-aggregations hidden">
+                  <div class="aggregation-section">
+                    <h3>Numeric Columns</h3>
+                    <div id="agg-numeric"></div>
+                  </div>
+                  <div class="aggregation-section" style="margin-top: 16px;">
+                    <h3>Categorical Columns</h3>
+                    <div id="agg-categorical"></div>
                   </div>
                 </div>
               </div>

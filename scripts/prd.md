@@ -34,6 +34,8 @@ PromptRunner is an Electron application designed to facilitate easy interaction 
 ### 6. Results Analysis
 - **Result Storage**: Store and organize execution results
 - **Aggregation Tools**: Analyze and aggregate results across multiple executions
+- **Tabular Display**: Automatically parse JSON outputs into a flattened table with a union of fields across runs; missing values are rendered as NULL
+- **Aggregations**: Compute numeric statistics (sum, average, median) and categorical distributions (value frequencies with percentages)
 - **Export Capabilities**: Export results in various formats (JSON, CSV, etc.)
 - **Visualization**: Basic charts and graphs for result analysis
 

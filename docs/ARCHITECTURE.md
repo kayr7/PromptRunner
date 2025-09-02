@@ -22,6 +22,7 @@ PromptRunner is built as an Electron application with a modular architecture tha
 - **Template Service**: Template management and variable substitution
 - **Data Service**: JSONL file processing and field mapping
 - **Result Service**: Result storage, aggregation, and analysis
+  - Renderer computes lightweight client-side aggregations for the current result set: JSON parsing, flattening to a union schema, numeric stats (sum/avg/median), and categorical distributions.
 - **Security Service**: API key management and encryption
 
 ### 4. Infrastructure Layer
@@ -76,7 +77,8 @@ DataService
 └── Result Storage
     ├── Structured storage
     ├── Query interface
-    └── Export capabilities
+    ├── Export capabilities
+    └── Renderer-side tabularization and aggregations (union schema with NULLs)
 ```
 
 ## Data Flow

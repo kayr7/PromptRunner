@@ -71,7 +71,7 @@ This document describes the purpose, dependencies, and exports of each file in t
 - `index.html` - Main application window HTML
   - **Dependencies**: styles/main.css, scripts/app.js
   - **Exports**: None (HTML file)
-  - **Purpose**: Main application interface structure
+  - **Purpose**: Main application interface structure. Results tab includes view toggles (List/Table/Aggregations), a table container, and aggregation sections.
 
 #### Styles (`src/renderer/styles/`)
 - `main.css` - Main application styles
@@ -88,7 +88,7 @@ This document describes the purpose, dependencies, and exports of each file in t
 - `app.js` - Main renderer process logic
   - **Dependencies**: components/*, services/*, utils/*
   - **Exports**: None (entry point)
-  - **Purpose**: Initializes UI, handles user interactions, manages state
+  - **Purpose**: Initializes UI, handles user interactions, manages state. Also parses JSON outputs from results, flattens them into a tabular structure with union columns and NULLs for missing fields, renders a results table, and computes aggregations (sum/avg/median for numeric, distributions for categorical).
 
 #### Components (`src/renderer/scripts/components/`)
 - `template-editor.js` - Template creation and editing component

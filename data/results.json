@@ -34,5 +34,59 @@
     "output": "{\"sentiment\":3}",
     "templateId": "1756811752853",
     "provider": "ollama"
+  },
+  {
+    "id": 0,
+    "input": {
+      "input_text": "this is total shit"
+    },
+    "output": "{\"sentiment\": 1}",
+    "templateId": "1756811752853",
+    "provider": "ollama"
+  },
+  {
+    "id": 1,
+    "input": {
+      "input_text": "this is amazing"
+    },
+    "output": "{\"sentiment\": 5}",
+    "templateId": "1756811752853",
+    "provider": "ollama"
+  },
+  {
+    "id": 2,
+    "input": {
+      "input_text": "this is meh"
+    },
+    "output": "{\n  \"sentiment\": 3\n}",
+    "templateId": "1756811752853",
+    "provider": "ollama"
+  },
+  {
+    "id": 0,
+    "input": {
+      "input_text": "this is total shit"
+    },
+    "output": "{\"sentiment\": 1}",
+    "templateId": "1756811752853",
+    "provider": "ollama"
+  },
+  {
+    "id": 1,
+    "input": {
+      "input_text": "this is amazing"
+    },
+    "output": "{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "ollama"
+  },
+  {
+    "id": 2,
+    "input": {
+      "input_text": "this is meh"
+    },
+    "output": "{\"sentiment\": 3}",
+    "templateId": "1756811752853",
+    "provider": "ollama"
   }
 ]

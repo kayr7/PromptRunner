@@ -11,6 +11,8 @@ class PromptRunnerApp {
         this.currentData = null;
         this.templates = [];
         this.results = [];
+        this.flattenedResults = [];
+        this.resultsView = "list"; // list | table | aggregations
         this.isExecuting = false;
 
         this.init();
@@ -171,6 +173,14 @@ class PromptRunnerApp {
 
             this.clearResults();
 
+        });
+
+        // Results view toggles
+        ["results-view-list", "results-view-table", "results-view-aggregations"].forEach(id => {
+            document.getElementById(id).addEventListener("click", (e) => {
+                const view = e.currentTarget.dataset.view;
+                this.switchResultsView(view);
+            });
         });
 
         // IPC event listeners
@@ -1076,7 +1086,192 @@ class PromptRunnerApp {
     `;
         }).join("");
 
+        // Precompute flattened results for table/aggregations
+        try {
+            this.flattenedResults = this.flattenResults(this.results);
+        } catch (e) {
+            console.error("Failed to flatten results:", e);
+            this.flattenedResults = [];
+        }
+        if (this.resultsView === "table") this.renderResultsTable();
+        if (this.resultsView === "aggregations") this.renderAggregations();
+
     }
+
+    /**
+     * Switch Results view
+     */
+    switchResultsView (view) {
+        this.resultsView = view;
+        const listEl = document.getElementById("results-list");
+        const tableEl = document.getElementById("results-table");
+        const aggsEl = document.getElementById("results-aggregations");
+        const hide = (el) => el.classList.add("hidden");
+        const show = (el) => el.classList.remove("hidden");
+        hide(listEl); hide(tableEl); hide(aggsEl);
+        if (view === "list") show(listEl);
+        if (view === "table") { show(tableEl); this.renderResultsTable(); }
+        if (view === "aggregations") { show(aggsEl); this.renderAggregations(); }
+    }
+
+    /**
+     * Try parse result.output as JSON. Returns parsed value or original string.
+     */
+    parseResultOutput (output) {
+        if (output == null) return null;
+        if (typeof output === "object") return output;
+        if (typeof output === "string") {
+            const trimmed = output.trim();
+            if ((trimmed.startsWith("{") && trimmed.endsWith("}")) || (trimmed.startsWith("[") && trimmed.endsWith("]"))) {
+                try { return JSON.parse(trimmed); } catch (_) { return output; }
+            }
+        }
+        return output;
+    }
+
+    /**
+     * Flatten results into uniform objects with union of fields; missing => null
+     */
+    flattenResults (results) {
+        // Build rows from input + parsed output
+        const rows = results.map(r => {
+            const parsed = this.parseResultOutput(r.output);
+            const row = { "_id": r.id, "_templateId": r.templateId, "_provider": r.provider };
+            // include input fields (shallow)
+            if (r.input && typeof r.input === "object") {
+                Object.keys(r.input).forEach(k => { row[`input.${k}`] = r.input[k]; });
+            }
+            // include output fields (flattened)
+            if (parsed && typeof parsed === "object") {
+                const flat = this.flattenObject(parsed, "output");
+                Object.assign(row, flat);
+            } else {
+                row["output"] = r.output;
+            }
+            return row;
+        });
+        // union of keys
+        const keys = new Set();
+        rows.forEach(row => Object.keys(row).forEach(k => keys.add(k)));
+        const allKeys = Array.from(keys);
+        // normalize missing fields as null
+        const normalized = rows.map(row => {
+            const copy = {};
+            allKeys.forEach(k => { copy[k] = (k in row) ? row[k] : null; });
+            return copy;
+        });
+        return { rows: normalized, keys: allKeys };
+    }
+
+    /**
+     * Flatten nested object with prefix. Similar to shared utils but scoped here.
+     */
+    flattenObject (obj, basePrefix = "") {
+        const out = {};
+        const rec = (o, prefix) => {
+            Object.keys(o).forEach(k => {
+                const key = prefix ? `${prefix}.${k}` : k;
+                const v = o[k];
+                if (v && typeof v === "object" && !Array.isArray(v)) {
+                    rec(v, key);
+                } else {
+                    out[key] = v;
+                }
+            });
+        };
+        rec(obj, basePrefix);
+        return out;
+    }
+
+    /**
+     * Render Results Table
+     */
+    renderResultsTable () {
+        const container = document.getElementById("results-table");
+        const thead = document.getElementById("results-table-headers");
+        const tbody = document.getElementById("results-table-rows");
+        if (!this.flattenedResults || !this.flattenedResults.rows || this.flattenedResults.rows.length === 0) {
+            thead.innerHTML = "";
+            tbody.innerHTML = `<tr><td colspan="1">No tabular data</td></tr>`;
+            return;
+        }
+        const { keys, rows } = this.flattenedResults;
+        thead.innerHTML = keys.map(k => `<th>${k}</th>`).join("");
+        // Limit initial rows
+        const display = rows.slice(0, 50);
+        tbody.innerHTML = display.map(r => `<tr>${keys.map(k => `<td>${this.formatCell(r[k])}</td>`).join("")}</tr>`).join("");
+        if (rows.length > 50) {
+            tbody.innerHTML += `<tr><td colspan="${keys.length}" style="text-align:center;color:var(--text-muted);">... and ${rows.length - 50} more rows</td></tr>`;
+        }
+    }
+
+    formatCell (value) {
+        if (value === null || value === undefined) return "NULL";
+        if (typeof value === "object") return `<pre>${this.safeStringify(value)}</pre>`;
+        return String(value);
+    }
+
+    safeStringify (v) {
+        try { return JSON.stringify(v, null, 2); } catch (_) { return String(v); }
+    }
+
+    /**
+     * Compute and render aggregations
+     */
+    renderAggregations () {
+        const numericEl = document.getElementById("agg-numeric");
+        const categoricalEl = document.getElementById("agg-categorical");
+        numericEl.innerHTML = "";
+        categoricalEl.innerHTML = "";
+        if (!this.flattenedResults || !this.flattenedResults.rows || this.flattenedResults.rows.length === 0) {
+            numericEl.textContent = "No data";
+            categoricalEl.textContent = "No data";
+            return;
+        }
+        const { keys, rows } = this.flattenedResults;
+        // Determine column types (numeric if all non-null values are numbers)
+        const numericKeys = [];
+        const categoricalKeys = [];
+        keys.forEach(k => {
+            const nonNull = rows.map(r => r[k]).filter(v => v !== null && v !== undefined);
+            if (nonNull.length === 0) return; // skip all-null columns
+            const allNumbers = nonNull.every(v => typeof v === "number" || (typeof v === "string" && v.trim() !== "" && !isNaN(Number(v))));
+            if (allNumbers) numericKeys.push(k);
+            else categoricalKeys.push(k);
+        });
+
+        // Numeric stats
+        const numHtml = numericKeys.map(k => {
+            const values = rows.map(r => r[k]).filter(v => v !== null && v !== undefined).map(v => typeof v === "number" ? v : Number((v||"").toString().trim())).filter(v => !isNaN(v));
+            if (values.length === 0) return "";
+            const sum = values.reduce((a,b) => a+b, 0);
+            const avg = sum / values.length;
+            const sorted = [...values].sort((a,b)=>a-b);
+            const mid = Math.floor(sorted.length/2);
+            const median = sorted.length % 2 ? sorted[mid] : (sorted[mid-1]+sorted[mid])/2;
+            return `<div class="agg-row"><strong>${k}</strong>: count=${values.length}, sum=${this.round(sum)}, avg=${this.round(avg)}, median=${this.round(median)}</div>`;
+        }).join("");
+        numericEl.innerHTML = numHtml || "No numeric columns";
+
+        // Categorical distributions (top 10)
+        const catHtml = categoricalKeys.map(k => {
+            const values = rows.map(r => r[k]).filter(v => v !== null && v !== undefined);
+            if (values.length === 0) return "";
+            const freq = new Map();
+            values.forEach(v => {
+                const key = typeof v === "string" ? v : JSON.stringify(v);
+                freq.set(key, (freq.get(key)||0)+1);
+            });
+            const entries = Array.from(freq.entries()).sort((a,b)=>b[1]-a[1]).slice(0, 10);
+            const total = values.length;
+            const rowsHtml = entries.map(([val, count]) => `<div class="agg-cat-item"><span class="agg-cat-val">${this.escapeHtml(val)}</span> <span class="agg-cat-count">${count} (${this.round(100*count/total)}%)</span></div>`).join("");
+            return `<div class="agg-col"><div class="agg-col-title"><strong>${k}</strong> (n=${total})</div>${rowsHtml}</div>`;
+        }).join("");
+        categoricalEl.innerHTML = catHtml || "No categorical columns";
+    }
+
+    round (v) { return Math.round(v * 1000) / 1000; }
+    escapeHtml (s) { return String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
 
     /**
      * Update execution UI state
