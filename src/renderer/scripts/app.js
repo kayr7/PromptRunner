@@ -26,6 +26,8 @@ class PromptRunnerApp {
         this.loadAppVersion();
         this.loadTemplates();
         this.setupTheme();
+        // Ensure execution controls start in an enabled state
+        this.updateExecutionUI(false);
         this.updateStatus("Ready");
 
     }
@@ -298,7 +300,9 @@ class PromptRunnerApp {
      */
     newTemplate () {
 
-        document.getElementById("template-name").value = "";
+        const nameInput = document.getElementById("template-name");
+        nameInput.value = "";
+        delete nameInput.dataset.templateId;
         document.getElementById("system-prompt").value = "";
         document.getElementById("user-prompt").value = "";
         this.updateTemplateVariables();
@@ -331,13 +335,16 @@ class PromptRunnerApp {
 
         }
 
+        // Check if we're editing an existing template
+        const existingTemplateId = document.getElementById("template-name").dataset.templateId;
+        
         const template = {
-            "id": Date.now().toString(),
+            "id": existingTemplateId || Date.now().toString(),
             name,
             systemPrompt,
             userPrompt,
             "variables": this.extractVariables(userPrompt),
-            "createdAt": new Date().toISOString()
+            "createdAt": existingTemplateId ? undefined : new Date().toISOString()
         };
 
         try {
@@ -347,7 +354,10 @@ class PromptRunnerApp {
             if (result.success) {
 
                 this.showNotification("Template saved successfully", "success");
-                this.loadTemplates();
+                // Update templates directly from the response
+                this.templates = result.templates || [];
+                this.renderTemplates();
+                this.updateTemplateSelects();
 
             } else {
 
@@ -413,6 +423,10 @@ class PromptRunnerApp {
                 this.templates = result.templates || [];
                 this.renderTemplates();
                 this.updateTemplateSelects();
+
+            } else {
+
+                console.error("Failed to load templates:", result.error);
 
             }
 
@@ -712,6 +726,60 @@ class PromptRunnerApp {
     }
 
     /**
+     * Refresh Ollama models
+     */
+    async refreshOllamaModels () {
+
+        const url = document.getElementById("ollama-url").value;
+
+        if (!url) {
+
+            this.showNotification("Please enter Ollama URL first", "error");
+
+            return;
+
+        }
+
+        try {
+
+            this.updateStatus("Fetching Ollama models...");
+            const result = await window.electronAPI.getOllamaModels(url);
+
+            if (result.success) {
+
+                const modelSelect = document.getElementById("ollama-model");
+                modelSelect.innerHTML = "<option value=\"\">Select model...</option>";
+
+                result.models.forEach(model => {
+
+                    const option = document.createElement("option");
+                    option.value = model;
+                    option.textContent = model;
+                    modelSelect.appendChild(option);
+
+                });
+
+                this.showNotification(`Loaded ${result.models.length} models`, "success");
+                this.updateStatus("Ollama models loaded");
+
+            } else {
+
+                this.showNotification("Failed to load models", "error");
+                this.updateStatus("Failed to load models");
+
+            }
+
+        } catch (error) {
+
+            this.showNotification("Error loading models", "error");
+            this.updateStatus("Error loading models");
+            console.error("Load models error:", error);
+
+        }
+
+    }
+
+    /**
      * Test OpenAI connection
      */
     async testOpenAIConnection () {
@@ -827,7 +895,7 @@ class PromptRunnerApp {
 
         const templateId = document.getElementById("execution-template").value,
             provider = document.getElementById("execution-provider").value,
-            batchSize = parseInt(document.getElementById("execution-batch-size").value);
+            manualInput = document.getElementById("execution-input").value.trim();
 
         if (!templateId) {
 
@@ -845,14 +913,6 @@ class PromptRunnerApp {
 
         }
 
-        if (!this.currentData || this.currentData.length === 0) {
-
-            this.showNotification("Please load data first", "error");
-
-            return;
-
-        }
-
         const template = this.templates.find(t => t.id === templateId);
 
         if (!template) {
@@ -863,19 +923,78 @@ class PromptRunnerApp {
 
         }
 
+        // Determine data source
+        let executionData = [];
+        if (manualInput) {
+            // Use manual input
+            try {
+                const parsedInput = JSON.parse(manualInput);
+                executionData = [parsedInput];
+            } catch (error) {
+                this.showNotification("Invalid JSON in manual input", "error");
+                return;
+            }
+        } else if (this.currentData && this.currentData.length > 0) {
+            // Use loaded JSONL data
+            executionData = this.currentData;
+        } else {
+            this.showNotification("Please provide manual input or load a JSONL file", "error");
+            return;
+        }
+
         try {
 
             this.isExecuting = true;
             this.updateExecutionUI(true);
             this.updateStatus("Starting execution...");
 
-            const result = await window.electronAPI.executeBatch(provider, template, this.currentData, {batchSize});
+            // Build provider-specific config
+            let providerConfig = {};
+            if (provider === "ollama") {
+                const url = document.getElementById("ollama-url").value.trim(),
+                    model = document.getElementById("ollama-model").value.trim();
+
+                if (!url) {
+                    this.showNotification("Please enter Ollama URL", "error");
+                    return;
+                }
+                if (!model) {
+                    this.showNotification("Please select an Ollama model", "error");
+                    return;
+                }
+
+                providerConfig = { url, model };
+
+            } else if (provider === "openai") {
+                const apiKey = document.getElementById("openai-api-key").value.trim(),
+                    model = document.getElementById("openai-model").value.trim();
+
+                if (!apiKey) {
+                    this.showNotification("Please enter OpenAI API key", "error");
+                    return;
+                }
+                if (!model) {
+                    this.showNotification("Please select an OpenAI model", "error");
+                    return;
+                }
+
+                providerConfig = { apiKey, model };
+            }
+
+            const result = await window.electronAPI.executeBatch(provider, template, executionData, providerConfig);
 
             if (result.success) {
 
                 this.results = result.results;
+                // Persist results
+                try {
+                    await window.electronAPI.saveResults(this.results);
+                } catch (e) {
+                    console.error('Failed to save results:', e);
+                }
                 this.showNotification("Execution completed", "success");
                 this.updateStatus(`Execution completed: ${result.results.length} results`);
+                this.renderResults();
                 this.switchTab("results");
 
             } else {
@@ -908,6 +1027,54 @@ class PromptRunnerApp {
         this.isExecuting = false;
         this.updateExecutionUI(false);
         this.updateStatus("Execution stopped");
+
+    }
+
+    /**
+     * Render results list
+     */
+    renderResults () {
+
+        const list = document.getElementById("results-list");
+
+        if (!this.results || this.results.length === 0) {
+
+            list.innerHTML = `
+      <div class="empty-state">
+        <span class="empty-icon">📈</span>
+        <p>No results yet</p>
+        <p>Execute some prompts to see results here</p>
+      </div>
+    `;
+
+            return;
+
+        }
+
+        // Build a map of templateId -> template name for display
+        const templateNameById = {};
+        this.templates.forEach(t => { templateNameById[t.id] = t.name; });
+
+        list.innerHTML = this.results.map(r => {
+            const title = `${templateNameById[r.templateId] || "Template"} • ${r.provider || "provider"} • #${r.id}`;
+            const input = JSON.stringify(r.input, null, 2);
+            const content = r.error ? `<pre class="error">${r.error}</pre>` : `<pre>${(r.output || "").toString()}</pre>`;
+            return `
+      <div class="result-item">
+        <div class="result-header"><h4>${title}</h4></div>
+        <div class="result-body">
+          <div class="result-section">
+            <div class="result-label">Input</div>
+            <pre>${input}</pre>
+          </div>
+          <div class="result-section">
+            <div class="result-label">Output</div>
+            ${content}
+          </div>
+        </div>
+      </div>
+    `;
+        }).join("");
 
     }
 
@@ -1077,6 +1244,71 @@ class PromptRunnerApp {
 
             this.showNotification("Error exporting results", "error");
             console.error("Export error:", error);
+
+        }
+
+    }
+
+    /**
+     * Edit template
+     */
+    editTemplate (templateId) {
+
+        const template = this.templates.find(t => t.id === templateId);
+
+        if (!template) {
+
+            this.showNotification("Template not found", "error");
+
+            return;
+
+        }
+
+        // Populate the editor with template data
+        const nameInput = document.getElementById("template-name");
+        nameInput.value = template.name;
+        nameInput.dataset.templateId = template.id;
+        document.getElementById("system-prompt").value = template.systemPrompt || "";
+        document.getElementById("user-prompt").value = template.userPrompt;
+
+        // Update variables display
+        this.updateTemplateVariables();
+
+        // Switch to templates tab
+        this.switchTab("templates");
+
+    }
+
+    /**
+     * Delete template
+     */
+    async deleteTemplate (templateId) {
+
+        if (!confirm("Are you sure you want to delete this template?")) {
+
+            return;
+
+        }
+
+        try {
+
+            const result = await window.electronAPI.deleteTemplate(templateId);
+
+            if (result.success) {
+
+                this.showNotification("Template deleted", "success");
+                this.loadTemplates();
+
+            } else {
+
+                this.showNotification("Failed to delete template", "error");
+
+            }
+
+        } catch (error) {
+
+            this.showNotification("Error deleting template", "error");
+            console.error("Delete template error:", error);
 
         }
 

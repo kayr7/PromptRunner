@@ -1,6 +1,7 @@
 const {ipcMain, dialog} = require("electron");
 const path = require("path"),
     fs = require("fs").promises;
+const axios = require("axios");
 
 /*
  * Import services (will be implemented later)
@@ -10,6 +11,10 @@ const path = require("path"),
  * const ResultService = require('./services/result-service');
  * const SecurityService = require('./services/security-service');
  */
+
+// Simple in-memory storage for templates (will be replaced with proper database later)
+let templates = [];
+const templatesFile = path.join(process.cwd(), 'data/templates.json');
 
 /**
  * Setup all IPC handlers for main process
@@ -78,90 +83,219 @@ function setupIpcHandlers (mainWindow) {
 
         try {
 
-            // TODO: Implement actual LLM connection testing
-            console.log(`Testing ${provider} connection with config:`, config);
+            if (provider === "ollama") {
+                // Test Ollama connection
+                const response = await axios.get(`${config.url}/api/tags`, {
+                    timeout: 5000
+                });
+                return {"success": true, "message": "Ollama connection successful"};
+            } else if (provider === "openai") {
+                // Test OpenAI connection
+                const response = await axios.get("https://api.openai.com/v1/models", {
+                    headers: {
+                        "Authorization": `Bearer ${config.apiKey}`
+                    },
+                    timeout: 5000
+                });
+                return {"success": true, "message": "OpenAI connection successful"};
+            }
 
-            return {"success": true,
-                "message": "Connection test successful"};
+            return {"success": false, "message": "Unknown provider"};
 
         } catch (error) {
 
-            return {"success": false,
-                "message": error.message};
+            return {"success": false, "message": error.message};
 
         }
 
     });
 
-    ipcMain.handle("execute-prompt", async (event, provider, prompt, config) => {
+    ipcMain.handle("get-ollama-models", async (event, url) => {
 
         try {
 
-            // TODO: Implement actual prompt execution
-            console.log(`Executing prompt with ${provider}:`, prompt);
+            const response = await axios.get(`${url}/api/tags`, {
+                timeout: 5000
+            });
 
-            return {"success": true,
-                "result": "Sample response"};
+            const models = response.data.models || [];
+            return {"success": true, "models": models.map(model => model.name)};
 
         } catch (error) {
 
-            return {"success": false,
-                "error": error.message};
+            return {"success": false, "error": error.message};
 
         }
 
+    });
+
+    // Helper function for executing prompts
+    async function executePrompt(provider, prompt, config) {
+        try {
+            if (provider === "ollama") {
+                const response = await axios.post(`${config.url}/api/generate`, {
+                    "model": config.model,
+                    "prompt": prompt,
+                    // Ensure template's system prompt is applied for model behavior
+                    "system": config.systemPrompt || undefined,
+                    "stream": false
+                }, {
+                    timeout: config.timeout || 30000
+                });
+
+                return {"success": true, "result": response.data.response};
+            } else if (provider === "openai") {
+                const response = await axios.post("https://api.openai.com/v1/chat/completions", {
+                    model: config.model,
+                    messages: [
+                        {"role": "system", "content": config.systemPrompt || "You are a helpful assistant."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    max_tokens: config.maxTokens || 1000,
+                    temperature: config.temperature || 0.7
+                }, {
+                    headers: {
+                        "Authorization": `Bearer ${config.apiKey}`,
+                        "Content-Type": "application/json"
+                    },
+                    timeout: config.timeout || 30000
+                });
+
+                return {"success": true, "result": response.data.choices[0].message.content};
+            }
+
+            return {"success": false, "error": "Unknown provider"};
+        } catch (error) {
+            return {"success": false, "error": error.message};
+        }
+    }
+
+    ipcMain.handle("execute-prompt", async (event, provider, prompt, config) => {
+        return await executePrompt(provider, prompt, config);
     });
 
     ipcMain.handle("execute-batch", async (event, provider, template, data, config) => {
 
         try {
 
-            // TODO: Implement actual batch execution
-            console.log(`Executing batch with ${provider}:`, {template,
-                "dataCount": data.length});
+            const results = [];
 
-            // Simulate progress updates
             for (let i = 0; i < data.length; i++) {
+                const item = data[i];
+                
+                // Replace variables in template
+                let userPrompt = template.userPrompt;
+                Object.keys(item).forEach(key => {
+                    userPrompt = userPrompt.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), item[key]);
+                });
 
+                // Execute prompt
+                const result = await executePrompt(provider, userPrompt, {
+                    ...config,
+                    systemPrompt: template.systemPrompt
+                });
+
+                if (result.success) {
+                    results.push({
+                        id: i,
+                        input: item,
+                        output: result.result,
+                        templateId: template.id,
+                        provider: provider
+                    });
+                } else {
+                    results.push({
+                        id: i,
+                        input: item,
+                        output: null,
+                        error: result.error,
+                        templateId: template.id,
+                        provider: provider
+                    });
+                }
+
+                // Send progress update
                 mainWindow.webContents.send("execution-progress", {
                     "current": i + 1,
                     "total": data.length,
                     "percentage": ((i + 1) / data.length) * 100
                 });
 
-                // Simulate processing time
+                // Small delay to prevent overwhelming the API
                 await new Promise(resolve => setTimeout(resolve, 100));
-
             }
 
-            return {"success": true,
-                "results": data.map((_, i) => ({"id": i,
-                    "result": `Result ${i + 1}`}))};
+            return {"success": true, "results": results};
 
         } catch (error) {
 
-            return {"success": false,
-                "error": error.message};
+            return {"success": false, "error": error.message};
 
         }
 
     });
 
-    // Template operations (placeholder implementations)
+    // Template operations (implemented with file storage)
     ipcMain.handle("save-template", async (event, template) => {
 
         try {
 
-            // TODO: Implement template saving
-            console.log("Saving template:", template);
+            // Ensure data directory exists
+            const dataDir = path.dirname(templatesFile);
+            await fs.mkdir(dataDir, { recursive: true });
 
-            return {"success": true,
-                "id": Date.now().toString()};
+            // Load existing templates
+            let existingTemplates = [];
+            try {
+                const content = await fs.readFile(templatesFile, "utf8");
+                existingTemplates = JSON.parse(content);
+            } catch (error) {
+                // File doesn't exist or is invalid, start with empty array
+            }
+
+            // Add or update template (handle case where renderer provided an id for new templates)
+            if (template.id) {
+                const index = existingTemplates.findIndex(t => t.id === template.id);
+                const now = new Date().toISOString();
+                if (index !== -1) {
+                    // Update existing
+                    const existing = existingTemplates[index];
+                    existingTemplates[index] = {
+                        ...existing,
+                        ...template,
+                        "createdAt": existing.createdAt || template.createdAt || now,
+                        "updatedAt": now
+                    };
+                } else {
+                    // Treat as new if not found
+                    const newTemplate = {
+                        ...template,
+                        "createdAt": template.createdAt || now,
+                        "updatedAt": now
+                    };
+                    existingTemplates.push(newTemplate);
+                }
+            } else {
+                // Add new template (no id provided)
+                const now = new Date().toISOString();
+                template.id = Date.now().toString();
+                template.createdAt = now;
+                template.updatedAt = now;
+                existingTemplates.push(template);
+            }
+
+            // Save to file
+            const jsonContent = JSON.stringify(existingTemplates, null, 2);
+            await fs.writeFile(templatesFile, jsonContent, "utf8");
+
+            // Update the in-memory templates array
+            templates = existingTemplates;
+
+            return {"success": true, "id": template.id, "templates": existingTemplates};
 
         } catch (error) {
 
-            return {"success": false,
-                "error": error.message};
+            return {"success": false, "error": error.message};
 
         }
 
@@ -171,14 +305,23 @@ function setupIpcHandlers (mainWindow) {
 
         try {
 
-            // TODO: Implement template loading
-            return {"success": true,
-                "templates": []};
+            // Load templates from file
+            try {
+                const content = await fs.readFile(templatesFile, "utf8");
+                console.log("Read content from file:", content);
+                templates = JSON.parse(content);
+                console.log("Parsed templates:", templates);
+            } catch (error) {
+                // File doesn't exist or is invalid, return empty array
+                templates = [];
+                console.log("Error reading file:", error.message);
+            }
+
+            return {"success": true, "templates": templates};
 
         } catch (error) {
 
-            return {"success": false,
-                "error": error.message};
+            return {"success": false, "error": error.message};
 
         }
 
@@ -188,15 +331,26 @@ function setupIpcHandlers (mainWindow) {
 
         try {
 
-            // TODO: Implement template deletion
-            console.log("Deleting template:", templateId);
+            // Load existing templates
+            let existingTemplates = [];
+            try {
+                const content = await fs.readFile(templatesFile, "utf8");
+                existingTemplates = JSON.parse(content);
+            } catch (error) {
+                return {"success": false, "error": "No templates found"};
+            }
+
+            // Remove template
+            existingTemplates = existingTemplates.filter(t => t.id !== templateId);
+
+            // Save updated list
+            await fs.writeFile(templatesFile, JSON.stringify(existingTemplates, null, 2));
 
             return {"success": true};
 
         } catch (error) {
 
-            return {"success": false,
-                "error": error.message};
+            return {"success": false, "error": error.message};
 
         }
 
@@ -258,8 +412,19 @@ function setupIpcHandlers (mainWindow) {
 
         try {
 
-            // TODO: Implement result saving
-            console.log("Saving results:", results.length);
+            const resultsFile = path.join(process.cwd(), 'data/results.json');
+            await fs.mkdir(path.dirname(resultsFile), { recursive: true });
+
+            let existing = [];
+            try {
+                const content = await fs.readFile(resultsFile, 'utf8');
+                existing = JSON.parse(content);
+            } catch (_) {
+                existing = [];
+            }
+
+            const updated = [...existing, ...results];
+            await fs.writeFile(resultsFile, JSON.stringify(updated, null, 2), 'utf8');
 
             return {"success": true};
 
@@ -276,9 +441,25 @@ function setupIpcHandlers (mainWindow) {
 
         try {
 
-            // TODO: Implement result loading
+            const resultsFile = path.join(process.cwd(), 'data/results.json');
+            let results = [];
+            try {
+                const content = await fs.readFile(resultsFile, 'utf8');
+                results = JSON.parse(content);
+            } catch (_) {
+                results = [];
+            }
+
+            // Basic filtering by templateId/provider if provided
+            if (filters && (filters.templateId || filters.provider)) {
+                results = results.filter(r => (
+                    (!filters.templateId || r.templateId === filters.templateId) &&
+                    (!filters.provider || r.provider === filters.provider)
+                ));
+            }
+
             return {"success": true,
-                "results": []};
+                results};
 
         } catch (error) {
 

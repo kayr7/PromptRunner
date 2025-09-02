@@ -77,8 +77,8 @@ describe('PromptRunner Basic Tests', () => {
     const mainPath = path.join(__dirname, '..', 'src/main/main.js');
     const main = fs.readFileSync(mainPath, 'utf8');
     
-    expect(main).toContain('const { app, BrowserWindow');
-    expect(main).toContain('function createWindow()');
+    expect(main).toContain('const {app, BrowserWindow');
+    expect(main).toContain('function createWindow (');
     expect(main).toContain('app.whenReady()');
   });
 
@@ -104,9 +104,9 @@ describe('PromptRunner Basic Tests', () => {
     const app = fs.readFileSync(appPath, 'utf8');
     
     expect(app).toContain('class PromptRunnerApp');
-    expect(app).toContain('constructor()');
-    expect(app).toContain('init()');
-    expect(app).toContain('setupEventListeners()');
+    expect(app).toContain('constructor (');
+    expect(app).toContain('init (');
+    expect(app).toContain('setupEventListeners (');
   });
 
   test('Constants file has required exports', () => {

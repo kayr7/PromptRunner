@@ -20,6 +20,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Shared utilities, types, and constants
 - Development environment with webpack, ESLint, and testing setup
 - Documentation: PRD, PR-FAQ, Architecture, FileDoc, README
+- **Template Management**: Proper template saving, loading, editing, and deletion with file-based storage
+- **Ollama Integration**: Real Ollama API integration with model fetching and connection testing
+- **Manual Input Mode**: Added JSON input field for single template execution
+- **Improved Execution**: Removed batch mode, now loops through JSONL items individually
+- **Template Selection**: Fixed template selection in execution dropdown
+- **Model Refresh**: Added refresh button for Ollama models
 
 ### Technical Implementation
 - Main process with secure preload script
@@ -31,12 +37,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Progress tracking and status updates
 - Error handling and user notifications
 
+### Fixed
+- Template selection not working after creation
+- Ollama model fetching not implemented
+- Batch execution mode complexity
+- Missing template editing and deletion functionality
+
+### Changed
+- Simplified execution flow to process items one by one
+- Added manual JSON input option alongside JSONL file loading
+- Improved error handling and user feedback
+- Enhanced UI with better input validation
+
 ### Planned for Next Release
-- LLM provider service implementations (Ollama, OpenAI)
 - Secure API key management with system keychain
-- Template persistence and management
-- Result storage and database integration
-- Advanced data processing and validation
+- Advanced result analytics and visualization
+- Database integration for better performance
+- Plugin system for custom integrations
 
 ## [0.1.0] - 2024-01-XX
 

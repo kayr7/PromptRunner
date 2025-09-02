@@ -562,6 +562,49 @@
   }
 }
 
+/* Textarea styles */
+.textarea {
+  width: 100%;
+  min-height: 100px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-color);
+  color: var(--text-color);
+  font-size: 14px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  resize: vertical;
+  transition: border-color 0.2s ease;
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px var(--primary-color-alpha);
+}
+
+/* Input help text */
+.input-help {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.input-help p {
+  margin: 0;
+}
+
+/* Model select group */
+.model-select-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.model-select-group .select {
+  flex: 1;
+}
+
 /* Responsive adjustments for components */
 @media (max-width: 768px) {
   .providers-grid {

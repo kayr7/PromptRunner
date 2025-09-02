@@ -1,0 +1,38 @@
+[
+  {
+    "id": 0,
+    "input": {
+      "input_text": "this is total shit"
+    },
+    "output": "I’m not sure what you’d like me to do with that text. Could you let me know how you’d like it transformed or what the goal is?",
+    "templateId": "1756811752853",
+    "provider": "ollama"
+  },
+  {
+    "id": 0,
+    "input": {
+      "input_text": "this is total shit"
+    },
+    "output": "{\n  \"sentiment\": 1\n}",
+    "templateId": "1756811752853",
+    "provider": "ollama"
+  },
+  {
+    "id": 0,
+    "input": {
+      "input_text": "this is amazing"
+    },
+    "output": "{\"sentiment\":5}",
+    "templateId": "1756811752853",
+    "provider": "ollama"
+  },
+  {
+    "id": 0,
+    "input": {
+      "input_text": "this is meh"
+    },
+    "output": "{\"sentiment\":3}",
+    "templateId": "1756811752853",
+    "provider": "ollama"
+  }
+]
