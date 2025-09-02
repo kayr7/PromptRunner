@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PromptRunner</title>
+  <link rel="stylesheet" href="styles/main.css">
+  <link rel="stylesheet" href="styles/components.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-content">
+        <h1 class="app-title">
+          <span class="app-icon">🤖</span>
+          PromptRunner
+        </h1>
+        <div class="header-actions">
+          <button id="theme-toggle" class="btn btn-icon" title="Toggle theme">
+            <span class="theme-icon">🌙</span>
+          </button>
+          <button id="preferences-btn" class="btn btn-icon" title="Preferences">
+            ⚙️
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="app-main">
+      <!-- Sidebar Navigation -->
+      <nav class="app-sidebar">
+        <div class="sidebar-content">
+          <ul class="nav-menu">
+            <li class="nav-item">
+              <button class="nav-link active" data-tab="templates">
+                <span class="nav-icon">📝</span>
+                Templates
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" data-tab="data">
+                <span class="nav-icon">📊</span>
+                Data
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" data-tab="providers">
+                <span class="nav-icon">🔗</span>
+                Providers
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" data-tab="execution">
+                <span class="nav-icon">▶️</span>
+                Execution
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" data-tab="results">
+                <span class="nav-icon">📈</span>
+                Results
+              </button>
+            </li>
+          </ul>
+        </div>
+      </nav>
+
+      <!-- Content Area -->
+      <div class="app-content">
+        <!-- Templates Tab -->
+        <div id="templates-tab" class="tab-content active">
+          <div class="tab-header">
+            <h2>Prompt Templates</h2>
+            <button id="new-template-btn" class="btn btn-primary">
+              <span class="btn-icon">+</span>
+              New Template
+            </button>
+          </div>
+          <div class="tab-body">
+            <div id="template-editor" class="template-editor">
+              <div class="editor-header">
+                <input type="text" id="template-name" class="input" placeholder="Template name">
+                <div class="editor-actions">
+                  <button id="save-template-btn" class="btn btn-success">Save</button>
+                  <button id="preview-template-btn" class="btn btn-secondary">Preview</button>
+                </div>
+              </div>
+              <div class="editor-body">
+                <div class="editor-section">
+                  <label for="system-prompt" class="label">System Prompt</label>
+                  <textarea id="system-prompt" class="textarea" placeholder="Enter system prompt..."></textarea>
+                </div>
+                <div class="editor-section">
+                  <label for="user-prompt" class="label">User Prompt Template</label>
+                  <textarea id="user-prompt" class="textarea" placeholder="Enter user prompt template with {{variables}}..."></textarea>
+                </div>
+                <div class="editor-section">
+                  <label class="label">Template Variables</label>
+                  <div id="template-variables" class="variables-list">
+                    <div class="variable-item">
+                      <span class="variable-name">No variables defined</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div id="template-list" class="template-list">
+              <h3>Saved Templates</h3>
+              <div id="templates-container" class="templates-container">
+                <div class="empty-state">
+                  <span class="empty-icon">📝</span>
+                  <p>No templates saved yet</p>
+                  <p>Create your first template to get started</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Data Tab -->
+        <div id="data-tab" class="tab-content">
+          <div class="tab-header">
+            <h2>Data Management</h2>
+            <button id="load-data-btn" class="btn btn-primary">
+              <span class="btn-icon">📁</span>
+              Load JSONL File
+            </button>
+          </div>
+          <div class="tab-body">
+            <div id="data-loader" class="data-loader">
+              <div class="file-drop-zone" id="file-drop-zone">
+                <div class="drop-zone-content">
+                  <span class="drop-zone-icon">📁</span>
+                  <p>Drop JSONL file here or click to browse</p>
+                  <p class="drop-zone-hint">Supports JSON Lines format</p>
+                </div>
+              </div>
+              <div id="data-preview" class="data-preview hidden">
+                <div class="preview-header">
+                  <h3>Data Preview</h3>
+                  <div class="preview-info">
+                    <span id="data-count" class="data-count">0 records</span>
+                    <button id="clear-data-btn" class="btn btn-text">Clear</button>
+                  </div>
+                </div>
+                <div class="preview-content">
+                  <div id="data-table" class="data-table">
+                    <table>
+                      <thead>
+                        <tr id="data-headers"></tr>
+                      </thead>
+                      <tbody id="data-rows"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Providers Tab -->
+        <div id="providers-tab" class="tab-content">
+          <div class="tab-header">
+            <h2>LLM Providers</h2>
+          </div>
+          <div class="tab-body">
+            <div class="providers-grid">
+              <!-- Ollama Provider -->
+              <div class="provider-card">
+                <div class="provider-header">
+                  <h3>Ollama (Local)</h3>
+                  <div class="provider-status" id="ollama-status">
+                    <span class="status-indicator offline"></span>
+                    <span class="status-text">Offline</span>
+                  </div>
+                </div>
+                <div class="provider-content">
+                  <div class="provider-config">
+                    <div class="config-group">
+                      <label for="ollama-url" class="label">Ollama URL</label>
+                      <input type="text" id="ollama-url" class="input" value="http://localhost:11434" placeholder="http://localhost:11434">
+                    </div>
+                    <div class="config-group">
+                      <label for="ollama-model" class="label">Model</label>
+                      <select id="ollama-model" class="select">
+                        <option value="">Select model...</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="provider-actions">
+                    <button id="test-ollama-btn" class="btn btn-secondary">Test Connection</button>
+                    <button id="refresh-ollama-models-btn" class="btn btn-text">Refresh Models</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- OpenAI Provider -->
+              <div class="provider-card">
+                <div class="provider-header">
+                  <h3>OpenAI (Cloud)</h3>
+                  <div class="provider-status" id="openai-status">
+                    <span class="status-indicator offline"></span>
+                    <span class="status-text">Not Configured</span>
+                  </div>
+                </div>
+                <div class="provider-content">
+                  <div class="provider-config">
+                    <div class="config-group">
+                      <label for="openai-api-key" class="label">API Key</label>
+                      <div class="api-key-input">
+                        <input type="password" id="openai-api-key" class="input" placeholder="Enter OpenAI API key">
+                        <button id="toggle-openai-key" class="btn btn-icon">👁️</button>
+                      </div>
+                    </div>
+                    <div class="config-group">
+                      <label for="openai-model" class="label">Model</label>
+                      <select id="openai-model" class="select">
+                        <option value="gpt-4">GPT-4</option>
+                        <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                        <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="provider-actions">
+                    <button id="test-openai-btn" class="btn btn-secondary">Test Connection</button>
+                    <button id="save-openai-config-btn" class="btn btn-success">Save Configuration</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Execution Tab -->
+        <div id="execution-tab" class="tab-content">
+          <div class="tab-header">
+            <h2>Prompt Execution</h2>
+          </div>
+          <div class="tab-body">
+            <div class="execution-panel">
+              <div class="execution-config">
+                <div class="config-section">
+                  <h3>Configuration</h3>
+                  <div class="config-grid">
+                    <div class="config-group">
+                      <label for="execution-template" class="label">Template</label>
+                      <select id="execution-template" class="select">
+                        <option value="">Select template...</option>
+                      </select>
+                    </div>
+                    <div class="config-group">
+                      <label for="execution-provider" class="label">Provider</label>
+                      <select id="execution-provider" class="select">
+                        <option value="">Select provider...</option>
+                        <option value="ollama">Ollama</option>
+                        <option value="openai">OpenAI</option>
+                      </select>
+                    </div>
+                    <div class="config-group">
+                      <label for="execution-batch-size" class="label">Batch Size</label>
+                      <input type="number" id="execution-batch-size" class="input" value="10" min="1" max="100">
+                    </div>
+                  </div>
+                </div>
+                <div class="execution-controls">
+                  <button id="start-execution-btn" class="btn btn-primary" disabled>
+                    <span class="btn-icon">▶️</span>
+                    Start Execution
+                  </button>
+                  <button id="stop-execution-btn" class="btn btn-danger" disabled>
+                    <span class="btn-icon">⏹️</span>
+                    Stop
+                  </button>
+                </div>
+              </div>
+              <div class="execution-progress hidden" id="execution-progress">
+                <div class="progress-header">
+                  <h3>Execution Progress</h3>
+                  <span id="progress-text" class="progress-text">0 / 0 (0%)</span>
+                </div>
+                <div class="progress-bar">
+                  <div id="progress-fill" class="progress-fill" style="width: 0%"></div>
+                </div>
+                <div class="progress-details">
+                  <div id="current-item" class="current-item">No execution in progress</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Results Tab -->
+        <div id="results-tab" class="tab-content">
+          <div class="tab-header">
+            <h2>Results Analysis</h2>
+            <div class="results-actions">
+              <button id="export-results-btn" class="btn btn-secondary">Export</button>
+              <button id="clear-results-btn" class="btn btn-text">Clear</button>
+            </div>
+          </div>
+          <div class="tab-body">
+            <div class="results-panel">
+              <div class="results-filters">
+                <div class="filter-group">
+                  <label for="results-template-filter" class="label">Template</label>
+                  <select id="results-template-filter" class="select">
+                    <option value="">All templates</option>
+                  </select>
+                </div>
+                <div class="filter-group">
+                  <label for="results-provider-filter" class="label">Provider</label>
+                  <select id="results-provider-filter" class="select">
+                    <option value="">All providers</option>
+                  </select>
+                </div>
+                <div class="filter-group">
+                  <label for="results-date-filter" class="label">Date Range</label>
+                  <select id="results-date-filter" class="select">
+                    <option value="">All time</option>
+                    <option value="today">Today</option>
+                    <option value="week">This week</option>
+                    <option value="month">This month</option>
+                  </select>
+                </div>
+              </div>
+              <div class="results-content">
+                <div id="results-list" class="results-list">
+                  <div class="empty-state">
+                    <span class="empty-icon">📈</span>
+                    <p>No results yet</p>
+                    <p>Execute some prompts to see results here</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Status Bar -->
+    <footer class="app-footer">
+      <div class="footer-content">
+        <div class="footer-left">
+          <span id="app-version" class="app-version">v0.1.0</span>
+        </div>
+        <div class="footer-right">
+          <span id="status-message" class="status-message">Ready</span>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Scripts -->
+  <script src="scripts/app.js"></script>
+</body>
+</html>
