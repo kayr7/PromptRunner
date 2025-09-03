@@ -26,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Improved Execution**: Removed batch mode, now loops through JSONL items individually
 - **Template Selection**: Fixed template selection in execution dropdown
 - **Model Refresh**: Added refresh button for Ollama models
-- **Results Table & Aggregations**: Results tab now includes List/Table/Aggregations views. JSON outputs are parsed and flattened into a table with union columns and NULLs for missing fields. Added numeric statistics (sum/average/median) and categorical distributions.
+- **Results Table & Aggregations**: Results tab now includes List/Table/Aggregations views. JSON outputs are parsed and flattened into a table with union columns and NULLs for missing fields. Added numeric statistics (sum/average/median) and categorical distributions (only when < 50 classes) with inline histogram bars.
 
 ### Technical Implementation
 - Main process with secure preload script

@@ -1253,19 +1253,36 @@ class PromptRunnerApp {
         }).join("");
         numericEl.innerHTML = numHtml || "No numeric columns";
 
-        // Categorical distributions (top 10)
+        // Categorical distributions with threshold and histogram bars
+        const CLASS_THRESHOLD = 50;
         const catHtml = categoricalKeys.map(k => {
             const values = rows.map(r => r[k]).filter(v => v !== null && v !== undefined);
             if (values.length === 0) return "";
             const freq = new Map();
             values.forEach(v => {
                 const key = typeof v === "string" ? v : JSON.stringify(v);
-                freq.set(key, (freq.get(key)||0)+1);
+                freq.set(key, (freq.get(key) || 0) + 1);
             });
-            const entries = Array.from(freq.entries()).sort((a,b)=>b[1]-a[1]).slice(0, 10);
+            const numClasses = freq.size;
+            if (numClasses >= CLASS_THRESHOLD) {
+                return `<div class=\"agg-col\"><div class=\"agg-col-title\"><strong>${k}</strong> (n=${values.length})</div><div class=\"agg-note\">Skipped aggregation: ${numClasses} classes (>= ${CLASS_THRESHOLD})</div></div>`;
+            }
             const total = values.length;
-            const rowsHtml = entries.map(([val, count]) => `<div class="agg-cat-item"><span class="agg-cat-val">${this.escapeHtml(val)}</span> <span class="agg-cat-count">${count} (${this.round(100*count/total)}%)</span></div>`).join("");
-            return `<div class="agg-col"><div class="agg-col-title"><strong>${k}</strong> (n=${total})</div>${rowsHtml}</div>`;
+            const entries = Array.from(freq.entries()).sort((a, b) => b[1] - a[1]);
+            const maxCount = entries.length > 0 ? entries[0][1] : 1;
+            const rowsHtml = entries.map(([val, count]) => {
+                const pct = total > 0 ? (100 * count / total) : 0;
+                const barWidth = maxCount > 0 ? Math.max(2, Math.round(100 * count / maxCount)) : 2; // ensure visible
+                return `
+                <div class=\"agg-cat-item\" style=\"display:flex; align-items:center; gap:8px; margin:4px 0;\">
+                  <div class=\"agg-cat-bar\" style=\"flex:1; background:var(--bg-muted,#e0e0e0); height:12px; position:relative; border-radius:4px; overflow:hidden;\">
+                    <div style=\"width:${barWidth}%; height:100%; background:var(--accent-color,#4a90e2);\"></div>
+                  </div>
+                  <div class=\"agg-cat-label\" style=\"min-width: 220px; font-size: 12px; text-align:left;\">${this.escapeHtml(val)}</div>
+                  <div class=\"agg-cat-count\" style=\"min-width: 100px; font-size: 12px; text-align:right;\">${count} (${this.round(pct)}%)</div>
+                </div>`;
+            }).join("");
+            return `<div class=\"agg-col\"><div class=\"agg-col-title\"><strong>${k}</strong> (n=${total}, classes=${numClasses})</div>${rowsHtml}</div>`;
         }).join("");
         categoricalEl.innerHTML = catHtml || "No categorical columns";
     }

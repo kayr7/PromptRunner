@@ -29,7 +29,7 @@ PromptRunner is an Electron desktop application that simplifies working with Lar
 - **Secure Storage**: Encrypted API key management
 - **Result Analysis**: Tools for aggregating and visualizing results
 - **Tabular Results**: JSON outputs are auto-parsed and flattened into a table view with consistent columns across runs; missing values appear as NULL
-- **Aggregations**: Numeric columns show sum/avg/median; categorical columns show value distributions
+- **Aggregations**: Numeric columns show sum/avg/median; categorical columns show value distributions (only when < 50 classes) with inline histograms
 - **Export Options**: Save results in various formats (JSON, CSV)
 
 ### Advanced Features
