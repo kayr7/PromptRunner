@@ -28,10 +28,90 @@ class PromptRunnerApp {
         this.loadAppVersion();
         this.loadTemplates();
         this.setupTheme();
+        this.setupOpenAIModelsRefresh();
+        this.loadSavedConfigurations();
         // Ensure execution controls start in an enabled state
         this.updateExecutionUI(false);
         this.updateStatus("Ready");
 
+    }
+
+    /**
+     * Load saved configurations
+     */
+    async loadSavedConfigurations() {
+        try {
+            // Load OpenAI API key
+            const openaiResult = await window.electronAPI.getAPIKey("openai");
+            if (openaiResult.success && openaiResult.key) {
+                const apiKeyInput = document.getElementById("openai-api-key");
+                apiKeyInput.value = openaiResult.key;
+                this.updateProviderStatus("openai", "configuring");
+                console.log("Loaded saved OpenAI API key");
+            }
+        } catch (error) {
+            console.error("Error loading saved configurations:", error);
+        }
+    }
+
+    /**
+     * Setup OpenAI models refresh button
+     */
+    setupOpenAIModelsRefresh() {
+        const refreshBtn = document.getElementById("refresh-openai-models-btn");
+        if (refreshBtn) {
+            refreshBtn.addEventListener("click", () => {
+                console.log("Refresh OpenAI models button clicked");
+                this.refreshOpenAIModels();
+            });
+        } else {
+            console.error("Refresh OpenAI models button not found");
+        }
+    }
+
+    /**
+     * Refresh OpenAI models
+     */
+    async refreshOpenAIModels () {
+        console.log("refreshOpenAIModels called");
+        const apiKey = document.getElementById("openai-api-key").value;
+        console.log("API key length:", apiKey ? apiKey.length : 0);
+        
+        if (!apiKey) {
+            this.showNotification("Please enter OpenAI API key first", "error");
+            return;
+        }
+
+        try {
+            this.updateStatus("Fetching OpenAI models...");
+            console.log("Calling getOpenAIModels...");
+            const result = await window.electronAPI.getOpenAIModels(apiKey);
+            console.log("getOpenAIModels result:", result);
+            
+            if (result.success) {
+                const modelSelect = document.getElementById("openai-model");
+                console.log("Populating model dropdown with:", result.models.length, "models");
+                modelSelect.innerHTML = "<option value=\"\">Select model...</option>";
+                
+                result.models.forEach(model => {
+                    const option = document.createElement("option");
+                    option.value = model.id;
+                    option.textContent = model.name;
+                    modelSelect.appendChild(option);
+                    console.log("Added model option:", model.id, model.name);
+                });
+                
+                this.showNotification(`Loaded ${result.models.length} models`, "success");
+                this.updateStatus("OpenAI models loaded");
+            } else {
+                this.showNotification("Failed to load models", "error");
+                this.updateStatus("Failed to load models");
+            }
+        } catch (error) {
+            console.error("Error in refreshOpenAIModels:", error);
+            this.showNotification("Error loading models", "error");
+            this.updateStatus("Error loading models");
+        }
     }
 
     /**
@@ -181,6 +261,11 @@ class PromptRunnerApp {
                 const view = e.currentTarget.dataset.view;
                 this.switchResultsView(view);
             });
+        });
+
+        // Categorical histograms button
+        document.getElementById("show-categorical-histograms-btn").addEventListener("click", () => {
+            this.showCategoricalHistograms();
         });
 
         // IPC event listeners
@@ -979,6 +1064,8 @@ class PromptRunnerApp {
                 const apiKey = document.getElementById("openai-api-key").value.trim(),
                     model = document.getElementById("openai-model").value.trim();
 
+                console.log("OpenAI execution config:", { apiKey: apiKey ? "***" : "missing", model });
+
                 if (!apiKey) {
                     this.showNotification("Please enter OpenAI API key", "error");
                     return;
@@ -1116,17 +1203,60 @@ class PromptRunnerApp {
 
     /**
      * Try parse result.output as JSON. Returns parsed value or original string.
+     * Handles mixed content by extracting JSON objects from text.
      */
     parseResultOutput (output) {
         if (output == null) return null;
         if (typeof output === "object") return output;
         if (typeof output === "string") {
             const trimmed = output.trim();
+            // First try exact JSON match
             if ((trimmed.startsWith("{") && trimmed.endsWith("}")) || (trimmed.startsWith("[") && trimmed.endsWith("]"))) {
-                try { return JSON.parse(trimmed); } catch (_) { return output; }
+                try { return JSON.parse(trimmed); } catch (_) { /* fall through to extraction */ }
+            }
+            // Extract JSON objects from mixed content
+            const jsonMatches = this.extractJSONFromText(trimmed);
+            if (jsonMatches.length > 0) {
+                // If multiple JSON objects, merge them (last one wins for conflicts)
+                const merged = {};
+                jsonMatches.forEach(obj => {
+                    if (typeof obj === "object" && obj !== null) {
+                        Object.assign(merged, obj);
+                    }
+                });
+                return Object.keys(merged).length > 0 ? merged : output;
             }
         }
         return output;
+    }
+
+    /**
+     * Extract JSON objects from text that may contain mixed content.
+     */
+    extractJSONFromText (text) {
+        const results = [];
+        // Match JSON objects: { ... }
+        const objectRegex = /\{[\s\S]*?\}/g;
+        let match;
+        while ((match = objectRegex.exec(text)) !== null) {
+            try {
+                const parsed = JSON.parse(match[0]);
+                results.push(parsed);
+            } catch (_) {
+                // Skip invalid JSON
+            }
+        }
+        // Match JSON arrays: [ ... ]
+        const arrayRegex = /\[[\s\S]*?\]/g;
+        while ((match = arrayRegex.exec(text)) !== null) {
+            try {
+                const parsed = JSON.parse(match[0]);
+                results.push(parsed);
+            } catch (_) {
+                // Skip invalid JSON
+            }
+        }
+        return results;
     }
 
     /**
@@ -1229,10 +1359,14 @@ class PromptRunnerApp {
             return;
         }
         const { keys, rows } = this.flattenedResults;
+        
+        // Filter out internal columns
+        const filteredKeys = keys.filter(k => k !== '_id' && k !== '_templateId');
+        
         // Determine column types (numeric if all non-null values are numbers)
         const numericKeys = [];
         const categoricalKeys = [];
-        keys.forEach(k => {
+        filteredKeys.forEach(k => {
             const nonNull = rows.map(r => r[k]).filter(v => v !== null && v !== undefined);
             if (nonNull.length === 0) return; // skip all-null columns
             const allNumbers = nonNull.every(v => typeof v === "number" || (typeof v === "string" && v.trim() !== "" && !isNaN(Number(v))));
@@ -1240,7 +1374,7 @@ class PromptRunnerApp {
             else categoricalKeys.push(k);
         });
 
-        // Numeric stats
+        // Numeric stats with histograms
         const numHtml = numericKeys.map(k => {
             const values = rows.map(r => r[k]).filter(v => v !== null && v !== undefined).map(v => typeof v === "number" ? v : Number((v||"").toString().trim())).filter(v => !isNaN(v));
             if (values.length === 0) return "";
@@ -1249,12 +1383,24 @@ class PromptRunnerApp {
             const sorted = [...values].sort((a,b)=>a-b);
             const mid = Math.floor(sorted.length/2);
             const median = sorted.length % 2 ? sorted[mid] : (sorted[mid-1]+sorted[mid])/2;
-            return `<div class="agg-row"><strong>${k}</strong>: count=${values.length}, sum=${this.round(sum)}, avg=${this.round(avg)}, median=${this.round(median)}</div>`;
+            const min = sorted[0];
+            const max = sorted[sorted.length-1];
+            
+            // Create histogram
+            const uniqueValues = new Set(values);
+            const histogram = this.createHistogram(values, uniqueValues.size);
+            
+            return `
+            <div class="agg-numeric-col">
+                <div class="agg-col-title"><strong>${k}</strong>: count=${values.length}, sum=${this.round(sum)}, avg=${this.round(avg)}, median=${this.round(median)}, min=${this.round(min)}, max=${this.round(max)}</div>
+                ${histogram}
+            </div>`;
         }).join("");
         numericEl.innerHTML = numHtml || "No numeric columns";
 
-        // Categorical distributions with threshold and histogram bars
-        const CLASS_THRESHOLD = 50;
+        // Categorical distributions with sqrt(n) threshold for text outputs
+        const totalSamples = rows.length;
+        const sqrtThreshold = Math.ceil(Math.sqrt(totalSamples));
         const catHtml = categoricalKeys.map(k => {
             const values = rows.map(r => r[k]).filter(v => v !== null && v !== undefined);
             if (values.length === 0) return "";
@@ -1264,27 +1410,168 @@ class PromptRunnerApp {
                 freq.set(key, (freq.get(key) || 0) + 1);
             });
             const numClasses = freq.size;
-            if (numClasses >= CLASS_THRESHOLD) {
-                return `<div class=\"agg-col\"><div class=\"agg-col-title\"><strong>${k}</strong> (n=${values.length})</div><div class=\"agg-note\">Skipped aggregation: ${numClasses} classes (>= ${CLASS_THRESHOLD})</div></div>`;
+            
+            // Skip if too many unique values (sqrt threshold)
+            if (numClasses >= sqrtThreshold) {
+                return `<div class="agg-col"><div class="agg-col-title"><strong>${k}</strong> (n=${values.length})</div><div class="agg-note">Skipped aggregation: ${numClasses} classes (>= sqrt(${totalSamples}) = ${sqrtThreshold})</div></div>`;
             }
+            
+            const total = values.length;
+            const entries = Array.from(freq.entries()).sort((a, b) => b[1] - a[1]);
+            const rowsHtml = entries.map(([val, count]) => {
+                const pct = total > 0 ? (100 * count / total) : 0;
+                return `
+                <div class="agg-cat-item" style="display:flex; align-items:center; gap:8px; margin:4px 0;">
+                  <div class="agg-cat-label" style="min-width: 220px; font-size: 12px; text-align:left;">${this.escapeHtml(val)}</div>
+                  <div class="agg-cat-count" style="min-width: 100px; font-size: 12px; text-align:right;">${count} (${this.round(pct)}%)</div>
+                </div>`;
+            }).join("");
+            return `<div class="agg-col"><div class="agg-col-title"><strong>${k}</strong> (n=${total}, classes=${numClasses})</div>${rowsHtml}</div>`;
+        }).join("");
+        categoricalEl.innerHTML = catHtml || "No categorical columns";
+    }
+
+    /**
+     * Show histograms for categorical data
+     */
+    showCategoricalHistograms() {
+        if (!this.flattenedResults || !this.flattenedResults.rows || this.flattenedResults.rows.length === 0) {
+            this.showNotification("No data available", "warning");
+            return;
+        }
+
+        const { keys, rows } = this.flattenedResults;
+        
+        // Filter out internal columns
+        const filteredKeys = keys.filter(k => k !== '_id' && k !== '_templateId');
+        
+        const categoricalKeys = [];
+        
+        // Determine categorical columns
+        filteredKeys.forEach(k => {
+            const nonNull = rows.map(r => r[k]).filter(v => v !== null && v !== undefined);
+            if (nonNull.length === 0) return;
+            const allNumbers = nonNull.every(v => typeof v === "number" || (typeof v === "string" && v.trim() !== "" && !isNaN(Number(v))));
+            if (!allNumbers) categoricalKeys.push(k);
+        });
+
+        if (categoricalKeys.length === 0) {
+            this.showNotification("No categorical columns found", "info");
+            return;
+        }
+
+        // Re-render categorical section with histograms
+        this.renderCategoricalWithHistograms(categoricalKeys);
+    }
+
+    /**
+     * Render categorical data with histograms
+     */
+    renderCategoricalWithHistograms(categoricalKeys) {
+        const categoricalEl = document.getElementById("agg-categorical");
+        const { rows } = this.flattenedResults;
+        
+        const totalSamples = rows.length;
+        const sqrtThreshold = Math.ceil(Math.sqrt(totalSamples));
+        const catHtml = categoricalKeys.map(k => {
+            const values = rows.map(r => r[k]).filter(v => v !== null && v !== undefined);
+            if (values.length === 0) return "";
+            const freq = new Map();
+            values.forEach(v => {
+                const key = typeof v === "string" ? v : JSON.stringify(v);
+                freq.set(key, (freq.get(key) || 0) + 1);
+            });
+            const numClasses = freq.size;
+            
+            // Skip if too many unique values (sqrt threshold)
+            if (numClasses >= sqrtThreshold) {
+                return `<div class="agg-col"><div class="agg-col-title"><strong>${k}</strong> (n=${values.length})</div><div class="agg-note">Skipped aggregation: ${numClasses} classes (>= sqrt(${totalSamples}) = ${sqrtThreshold})</div></div>`;
+            }
+            
             const total = values.length;
             const entries = Array.from(freq.entries()).sort((a, b) => b[1] - a[1]);
             const maxCount = entries.length > 0 ? entries[0][1] : 1;
             const rowsHtml = entries.map(([val, count]) => {
                 const pct = total > 0 ? (100 * count / total) : 0;
-                const barWidth = maxCount > 0 ? Math.max(2, Math.round(100 * count / maxCount)) : 2; // ensure visible
+                const barWidth = maxCount > 0 ? Math.max(2, Math.round(100 * count / maxCount)) : 2;
                 return `
-                <div class=\"agg-cat-item\" style=\"display:flex; align-items:center; gap:8px; margin:4px 0;\">
-                  <div class=\"agg-cat-bar\" style=\"flex:1; background:var(--bg-muted,#e0e0e0); height:12px; position:relative; border-radius:4px; overflow:hidden;\">
-                    <div style=\"width:${barWidth}%; height:100%; background:var(--accent-color,#4a90e2);\"></div>
+                <div class="agg-cat-item" style="display:flex; align-items:center; gap:8px; margin:4px 0;">
+                  <div class="agg-cat-bar" style="flex:1; background:var(--bg-muted,#e0e0e0); height:12px; position:relative; border-radius:4px; overflow:hidden;">
+                    <div style="width:${barWidth}%; height:100%; background:var(--accent-color,#4a90e2);"></div>
                   </div>
-                  <div class=\"agg-cat-label\" style=\"min-width: 220px; font-size: 12px; text-align:left;\">${this.escapeHtml(val)}</div>
-                  <div class=\"agg-cat-count\" style=\"min-width: 100px; font-size: 12px; text-align:right;\">${count} (${this.round(pct)}%)</div>
+                  <div class="agg-cat-label" style="min-width: 220px; font-size: 12px; text-align:left;">${this.escapeHtml(val)}</div>
+                  <div class="agg-cat-count" style="min-width: 100px; font-size: 12px; text-align:right;">${count} (${this.round(pct)}%)</div>
                 </div>`;
             }).join("");
-            return `<div class=\"agg-col\"><div class=\"agg-col-title\"><strong>${k}</strong> (n=${total}, classes=${numClasses})</div>${rowsHtml}</div>`;
+            return `<div class="agg-col"><div class="agg-col-title"><strong>${k}</strong> (n=${total}, classes=${numClasses})</div>${rowsHtml}</div>`;
         }).join("");
         categoricalEl.innerHTML = catHtml || "No categorical columns";
+    }
+
+    /**
+     * Create histogram for numerical data
+     */
+    createHistogram (values, uniqueCount) {
+        const maxBuckets = 20;
+        const minBuckets = 5;
+        
+        if (uniqueCount <= 50) {
+            // Show all unique values as discrete histogram
+            const freq = new Map();
+            values.forEach(v => freq.set(v, (freq.get(v) || 0) + 1));
+            const entries = Array.from(freq.entries()).sort((a, b) => a[0] - b[0]);
+            const maxFreq = Math.max(...entries.map(([_, count]) => count));
+            
+            const bars = entries.map(([val, count]) => {
+                const height = maxFreq > 0 ? Math.max(2, Math.round(100 * count / maxFreq)) : 2;
+                return `
+                <div class="histogram-bar" style="display:flex; align-items:flex-end; gap:4px; margin:2px 0;">
+                    <div style="width:${height}%; height:20px; background:var(--accent-color,#4a90e2); border-radius:2px; min-width:4px;"></div>
+                    <div style="font-size:10px; color:var(--text-muted); min-width:40px;">${this.round(val)}</div>
+                    <div style="font-size:10px; color:var(--text-muted); min-width:30px;">${count}</div>
+                </div>`;
+            }).join("");
+            
+            return `<div class="histogram-discrete" style="margin-top:8px; padding:8px; background:var(--bg-muted,#f5f5f5); border-radius:4px;">${bars}</div>`;
+        } else {
+            // Create buckets for continuous data
+            const min = Math.min(...values);
+            const max = Math.max(...values);
+            const range = max - min;
+            
+            // Determine number of buckets (aim for 10-20 buckets)
+            let numBuckets = Math.min(maxBuckets, Math.max(minBuckets, Math.ceil(Math.sqrt(uniqueCount))));
+            if (range === 0) numBuckets = 1;
+            
+            const bucketSize = range / numBuckets;
+            const buckets = new Array(numBuckets).fill(0);
+            
+            values.forEach(v => {
+                if (range === 0) {
+                    buckets[0]++;
+                } else {
+                    const bucketIndex = Math.min(Math.floor((v - min) / bucketSize), numBuckets - 1);
+                    buckets[bucketIndex]++;
+                }
+            });
+            
+            const maxBucket = Math.max(...buckets);
+            const bars = buckets.map((count, i) => {
+                const height = maxBucket > 0 ? Math.max(2, Math.round(100 * count / maxBucket)) : 2;
+                const bucketStart = min + i * bucketSize;
+                const bucketEnd = min + (i + 1) * bucketSize;
+                const label = range === 0 ? `${this.round(min)}` : `${this.round(bucketStart)}-${this.round(bucketEnd)}`;
+                
+                return `
+                <div class="histogram-bar" style="display:flex; align-items:flex-end; gap:4px; margin:2px 0;">
+                    <div style="width:${height}%; height:20px; background:var(--accent-color,#4a90e2); border-radius:2px; min-width:4px;"></div>
+                    <div style="font-size:10px; color:var(--text-muted); min-width:80px;">${label}</div>
+                    <div style="font-size:10px; color:var(--text-muted); min-width:30px;">${count}</div>
+                </div>`;
+            }).join("");
+            
+            return `<div class="histogram-continuous" style="margin-top:8px; padding:8px; background:var(--bg-muted,#f5f5f5); border-radius:4px;">${bars}</div>`;
+        }
     }
 
     round (v) { return Math.round(v * 1000) / 1000; }

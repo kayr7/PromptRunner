@@ -125,3 +125,5 @@ temp/
 # Application data
 app-data/
 user-data/
+
+data/config/api-keys.json

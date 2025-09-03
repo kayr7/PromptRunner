@@ -88,7 +88,7 @@ This document describes the purpose, dependencies, and exports of each file in t
 - `app.js` - Main renderer process logic
   - **Dependencies**: components/*, services/*, utils/*
   - **Exports**: None (entry point)
-  - **Purpose**: Initializes UI, handles user interactions, manages state. Also parses JSON outputs from results, flattens them into a tabular structure with union columns and NULLs for missing fields, renders a results table, and computes aggregations (sum/avg/median for numeric; distributions for categorical only when < 50 classes), including inline histogram bars.
+  - **Purpose**: Initializes UI, handles user interactions, manages state. Also parses JSON outputs from results, flattens them into a tabular structure with union columns and NULLs for missing fields, renders a results table, and computes aggregations (sum/avg/median/min/max with histograms for numeric; distributions for categorical only when < 50 classes), including inline histogram bars. Handles mixed content by extracting JSON objects from explanatory text.
 
 #### Components (`src/renderer/scripts/components/`)
 - `template-editor.js` - Template creation and editing component

@@ -30,6 +30,8 @@ PromptRunner is an Electron desktop application that simplifies working with Lar
 - **Result Analysis**: Tools for aggregating and visualizing results
 - **Tabular Results**: JSON outputs are auto-parsed and flattened into a table view with consistent columns across runs; missing values appear as NULL
 - **Aggregations**: Numeric columns show sum/avg/median; categorical columns show value distributions (only when < 50 classes) with inline histograms
++ **Tabular Results**: JSON outputs are auto-parsed and flattened into a table view with consistent columns across runs; missing values appear as NULL. Handles mixed content by extracting JSON objects from explanatory text.
++ **Aggregations**: Numeric columns show sum/avg/median; categorical columns show value distributions (only when < 50 classes) with inline histograms. Works even when LLM outputs contain reasoning mixed with structured data.
 - **Export Options**: Save results in various formats (JSON, CSV)
 
 ### Advanced Features
@@ -42,7 +44,7 @@ PromptRunner is an Electron desktop application that simplifies working with Lar
 
 ### Currently Supported
 - **Ollama**: Local model execution (requires Ollama installation)
-- **OpenAI**: GPT models via API (requires API key)
+- **OpenAI**: GPT models via API (including GPT-5, GPT-4o, GPT-3.5) with automatic model discovery
 
 ### Future Providers
 - Anthropic Claude

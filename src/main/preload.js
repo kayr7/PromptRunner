@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
     // LLM operations
     "testLLMConnection": (provider, config) => ipcRenderer.invoke("test-llm-connection", provider, config),
     "getOllamaModels": (url) => ipcRenderer.invoke("get-ollama-models", url),
+    "getOpenAIModels": (apiKey) => ipcRenderer.invoke("get-openai-models", apiKey),
     "executePrompt": (provider, prompt, config) => ipcRenderer.invoke("execute-prompt", provider, prompt, config),
     "executeBatch": (provider, template, data, config) => ipcRenderer.invoke("execute-batch", provider, template, data, config),
 

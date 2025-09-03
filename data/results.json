@@ -88,5 +88,1316 @@
     "output": "{\"sentiment\": 3}",
     "templateId": "1756811752853",
     "provider": "ollama"
+  },
+  {
+    "id": 0,
+    "input": {
+      "input_text": "this is total shit"
+    },
+    "output": "<think>\nOkay, let's see. The user wants me to rate the sentiment of the input text \"this is total shit\" on a scale from 1 to 5. Score 1 is strongly negative, 5 is strongly positive.\n\nFirst, I need to understand the text. The phrase \"this is total shit\" is pretty strong. \"Shit\" is a vulgar term meaning something is very bad. \"Total\" here emphasizes that it's completely bad. So the sentiment here is definitely negative.\n\nNow, considering the scale: 1 is strongly negative. Words like \"total shit\" are very negative, so it should be a 1. Let me check if there's any possible positive connotation, but no, \"shit\" is negative. Maybe someone might argue it's a strong negative but not the lowest, but in sentiment analysis, such phrases are usually the lowest score. For example, \"terrible\" might be a 1, and \"shit\" is even stronger. So yeah, definitely a 1.\n\nI should make sure there's no sarcasm or context I'm missing, but the text is straightforward. The user didn't provide any additional context, so it's a direct statement. Therefore, the sentiment score should be 1.\n</think>\n\n{\n  \"sentiment\": 1\n}",
+    "templateId": "1756811752853",
+    "provider": "ollama"
+  },
+  {
+    "id": 1,
+    "input": {
+      "input_text": "this is amazing"
+    },
+    "output": "<think>\nOkay, let's tackle this sentiment analysis task. The user wants me to rate the sentiment of the input text \"this is amazing\" on a scale from 1 to 5, where 1 is strongly negative and 5 is strongly positive.\n\nFirst, I need to understand the sentiment of the phrase. The word \"amazing\" is a strong positive adjective. It's commonly used to express high praise or enthusiasm. Phrases like \"this is amazing\" are typically very positive.\n\nNow, checking the scale: 5 is the highest positive score. Since \"amazing\" is a very positive word, the sentiment here should be a 5. There's no negative language here, so it's not a 1 or 2. It's clearly positive, so 4 or 5. But \"amazing\" is stronger than \"good\" or \"great,\" so it's definitely a 5.\n\nWait, let me make sure. Sometimes people might say \"this is amazing\" sarcastically, but without any context or additional cues like \"this is amazing, right?\" or a sarcastic tone, it's safe to assume it's genuine. The input is straightforward, so the sentiment is positive.\n\nSo, the correct score should be 5. Let me confirm with examples. If someone says \"this is amazing,\" it's a strong positive. So the sentiment score is 5.\n</think>\n\n{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "ollama"
+  },
+  {
+    "id": 2,
+    "input": {
+      "input_text": "this is meh"
+    },
+    "output": "<think>\nOkay, let's tackle this sentiment analysis. The user provided the input text \"this is meh\" and wants a score from 1 to 5.\n\nFirst, I need to understand what \"meh\" means. From what I know, \"meh\" is an expression of indifference or mild dissatisfaction. It's like saying something is neither good nor bad, just so-so. So, it's not strongly negative, but it's also not positive.\n\nNow, considering the scale: 1 is strongly negative, 5 is strongly positive. If \"meh\" is neutral or slightly negative, the score should be low but not the lowest. Let's see. If someone says \"this is meh,\" they're probably not happy but not angry either. So maybe a 2 or 3.\n\nWait, 1 is strongly negative, like \"terrible\" or \"awful.\" A 2 might be slightly negative, like \"not good.\" But \"meh\" is more neutral. Wait, but in sentiment analysis, sometimes neutral terms are around 3. However, \"meh\" is often used to express mild negativity. For example, if a product is \"meh,\" it's not bad but not great. So maybe a 2.\n\nWait, let me check some references. In sentiment analysis, \"meh\" is often considered neutral to slightly negative. But since the scale is 1-5, with 1 being strongly negative, 3 neutral, 5 positive. So \"meh\" would be closer to 2 or 3.\n\nBut the user example says \"this is meh\" – the person is expressing that something is unimpressive or underwhelming. So it's a bit negative but not strongly. So maybe a 2. Because 1 would be \"this is terrible,\" 2 is \"this is not good,\" and 3 is neutral. But \"meh\" is more like \"meh, it's okay,\" but not really positive.\n\nWait, maybe it's a 2. Let me think of examples. If someone says \"this is meh,\" they're probably not happy, so not a 3. So between 2 and 3. But since \"meh\" is a bit negative, I think 2 is more accurate. For example, if a movie is \"meh,\" it's not good, so a 2. If it's neutral, it's a 3. So \"meh\" leans towards negative, so 2.\n\nI think the answer should be 2.\n</think>\n\n{\n  \"sentiment\": 2\n}",
+    "templateId": "1756811752853",
+    "provider": "ollama"
+  },
+  {
+    "id": 0,
+    "input": {
+      "input_text": "this is total shit"
+    },
+    "output": "<think>\nOkay, let's tackle this sentiment analysis. The user provided the input text: \"this is total shit\". I need to rate it on a scale from 1 to 5, where 1 is strongly negative and 5 is strongly positive.\n\nFirst, I'll look at the words used. \"Total shit\" is a strong negative expression. \"Shit\" is a vulgar term often used to express strong dislike or frustration. Adding \"total\" emphasizes that negativity. So, this is definitely a negative sentiment.\n\nNow, considering the scale: 1 is the most negative. Since the phrase is very strong, it's probably a 1. Let me think if there's any nuance. Sometimes people use \"shit\" jokingly, but in this context, it's straightforward. The user didn't use any sarcasm indicators, so it's safe to assume it's genuine.\n\nComparing to examples: if someone says \"this is terrible\", that's a 1. \"Total shit\" is even stronger. So, 1 is the right score. No need to overcomplicate it. The answer should be 1.\n</think>\n\n{\n  \"sentiment\": 1\n}",
+    "templateId": "1756811752853",
+    "provider": "ollama"
+  },
+  {
+    "id": 1,
+    "input": {
+      "input_text": "this is amazing"
+    },
+    "output": "<think>\nOkay, let's tackle this sentiment analysis task. The user provided an input text: \"this is amazing\". My job is to rate it on a scale from 1 to 5, where 1 is strongly negative and 5 is strongly positive.\n\nFirst, I need to understand the sentiment of the phrase. The word \"amazing\" is a strong positive adjective. It's commonly used to express high praise or delight. So, the sentiment here is clearly positive.\n\nNow, considering the scale: 5 is strongly positive. Since \"amazing\" is a very positive word, it should be a 5. I should check if there's any sarcasm or context that might change it, but the text is straightforward. There's no indication of sarcasm here. The phrase is simple and positive.\n\nSo, the rating should be 5. I need to make sure the output is strictly in JSON format as specified, with only the sentiment score. No extra text. Let me confirm the required JSON structure again. The user said to output exactly:\n\n{\n  \"sentiment\": [SCORE]\n}\n\nSo, replacing [SCORE] with 5. No other fields. Alright, that's it. The answer is 5.\n</think>\n\n{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "ollama"
+  },
+  {
+    "id": 2,
+    "input": {
+      "input_text": "this is meh"
+    },
+    "output": "<think>\nOkay, let's tackle this sentiment analysis. The input text is \"this is meh\". Hmm, \"meh\" is an informal term that's used to express indifference or lack of enthusiasm. So, it's not a strong positive or negative, just kind of neutral or slightly negative. \n\nThe scale goes from 1 (strongly negative) to 5 (strongly positive). I need to figure out where \"meh\" fits. If it's neutral, maybe a 3? But sometimes \"meh\" is considered slightly negative because it's not positive. Let me think. If someone says \"this is meh\", they're not happy, but it's not angry either. So maybe a 2? Wait, 1 is strongly negative, 2 is negative but not strong. \n\nWait, \"meh\" is more like \"meh, it's okay\" but not good. So maybe a 2? But sometimes people use \"meh\" to mean it's not great, so slightly negative. Let's see examples. If a product review says \"this is meh\", it's probably a low score, but not the worst. So maybe a 2. But I've seen some sentiment analysis models assign \"meh\" to a 2.5, but since we have to choose integers, 2 or 3.\n\nWait, the scale is 1-5, integers. So 1=strongly negative, 5=strongly positive. \"Meh\" is not negative like \"terrible\" (1), but also not positive. So maybe 2. Let me check some references. In sentiment analysis, \"meh\" is often considered neutral to slightly negative. But since neutral might be 3, but \"meh\" is a bit below neutral. Wait, neutral is 3, so below neutral would be 2. So I think 2 is the right choice here. So the sentiment score is 2.\n</think>\n\n{\n  \"sentiment\": 2\n}",
+    "templateId": "1756811752853",
+    "provider": "ollama"
+  },
+  {
+    "id": 0,
+    "input": {
+      "input_text": "this is total shit"
+    },
+    "output": "<think>\nOkay, the user wants me to rate the sentiment of the input text \"this is total shit\" on a scale from 1 to 5. Let me think about this.\n\nFirst, the scale: 1 is strongly negative, 5 is strongly positive. The phrase \"this is total shit\" is pretty strong. \"Shit\" is a vulgar term expressing strong dislike or frustration. So, it's definitely negative. \n\nI need to figure out where on the scale that falls. Since it's a strong negative expression, it's probably a 1. Let me check if there's any nuance. The word \"total\" emphasizes it, so it's not just a little bad—it's completely bad. There's no positive spin here. \n\nSo, the sentiment should be 1. Let me confirm: 1 is strongly negative, which matches the input. No need to overcomplicate it. The user provided a clear example, so the answer is straightforward.\n</think>\n\n{\n  \"sentiment\": 1\n}",
+    "templateId": "1756811752853",
+    "provider": "ollama"
+  },
+  {
+    "id": 1,
+    "input": {
+      "input_text": "this is amazing"
+    },
+    "output": "<think>\nOkay, let's see. The user wants me to rate the sentiment of the input text \"this is amazing\" on a scale from 1 to 5. I need to make sure I understand the task correctly. The scale is 1 for strongly negative and 5 for strongly positive. So, \"this is amazing\" is clearly a positive statement. Words like \"amazing\" are strong positive indicators. There's no negative language here. So, the sentiment should be high. Let me think about the scale. A 5 is strongly positive, so \"amazing\" would fit that. I don't see any sarcasm or context that would make it negative. So the score should be 5. Let me confirm: \"amazing\" is a positive word, so yes, 5 is correct. No need to overcomplicate it. The answer is 5.\n</think>\n\n{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "ollama"
+  },
+  {
+    "id": 2,
+    "input": {
+      "input_text": "this is meh"
+    },
+    "output": "<think>\nOkay, let's see. The user wants me to rate the sentiment of the input text \"this is meh\" on a scale from 1 to 5. Hmm, \"meh\" is an informal way of saying something is uninteresting or mediocre. So, it's not strongly negative like \"terrible\" or positive like \"amazing.\" It's kind of neutral but leaning slightly negative. On a scale of 1-5, where 1 is strongly negative and 5 is strongly positive, \"meh\" would be somewhere in the middle. Maybe a 2 or 3? Let me think. If 1 is very bad, 3 is neutral, and 5 is great, then \"meh\" is probably a 2 because it's a bit negative but not extremely so. Wait, sometimes \"meh\" is considered neutral, so maybe a 3. But I should check. For example, if someone says \"this is meh,\" they're not happy, so it's slightly negative. So, 2 would be better. Let me confirm. If the scale is 1 (strongly negative), 2 (negative), 3 (neutral), 4 (positive), 5 (strongly positive), then \"meh\" is negative but not strong. So, 2. Yeah, I think 2 is right. Let me make sure. If it was \"this is great,\" that's 5. \"This is bad\" is 1. \"This is okay\" might be 3. \"Meh\" is like \"eh,\" so slightly negative, so 2. Okay, I'll go with 2.\n</think>\n\n{\n  \"sentiment\": 2\n}",
+    "templateId": "1756811752853",
+    "provider": "ollama"
+  },
+  {
+    "id": 0,
+    "input": {
+      "input_text": "this is total shit"
+    },
+    "output": "<think>\nOkay, let's tackle this sentiment analysis request. The user provided the input text \"this is total shit\" and wants a sentiment score from 1 to 5. \n\nFirst, I need to understand the sentiment of the phrase. The words \"total shit\" are pretty strong negative expressions. \"Shit\" is a vulgar term used to express strong dislike or frustration. Adding \"total\" emphasizes that it's completely bad.\n\nLooking at the scale: 1 is strongly negative, 5 strongly positive. So, words like \"shit\" usually indicate a very negative sentiment. There's no positive context here. The phrase is a direct complaint.\n\nI should check if there's any sarcasm or context I'm missing, but the text is straightforward. No emojis or other indicators. So, the sentiment is clearly negative. \n\nComparing to the scale, 1 is the lowest (most negative). So, this should be a 1. Let me make sure there's no misunderstanding. Sometimes people might use \"shit\" in a different context, but here it's a clear negative statement. \n\nNo need to overcomplicate. The answer is 1.\n</think>\n\n{\n  \"sentiment\": 1\n}",
+    "templateId": "1756811752853",
+    "provider": "ollama"
+  },
+  {
+    "id": 1,
+    "input": {
+      "input_text": "this is amazing"
+    },
+    "output": "<think>\nOkay, let's see. The user wants me to rate the sentiment of the input text \"this is amazing\" on a scale from 1 to 5. A score of 1 is strongly negative, 5 is strongly positive.\n\nFirst, I need to understand the text. The phrase \"this is amazing\" is clearly positive. Words like \"amazing\" are strong positive adjectives. There's no negative words here. So the sentiment should be high.\n\nNow, considering the scale: 1 is negative, 5 is positive. Since \"amazing\" is a very positive word, the score should be 5. Let me check if there's any possible sarcasm or context that might make it negative, but the text is straightforward. No context given, so it's safe to assume it's genuine.\n\nSo the sentiment score should be 5. I need to make sure the JSON output is exactly as specified. The user said to use only JSON with \"sentiment\" as the key and the number as the value. So the output should be {\"sentiment\": 5}.\n\nWait, the example in the problem uses 1 to 5, so 5 is the highest. Yep, \"amazing\" is top-tier positive. No need to overcomplicate it. Just confirm that the word \"amazing\" translates to 5. Yep, that's standard. So the answer is 5.\n</think>\n\n{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "ollama"
+  },
+  {
+    "id": 2,
+    "input": {
+      "input_text": "this is meh"
+    },
+    "output": "<think>\nOkay, let's tackle this sentiment analysis. The input text is \"this is meh\". First, I need to figure out what \"meh\" means. From what I know, \"meh\" is an expression used to convey indifference or lack of enthusiasm. It's like saying something is boring or not good, but not strongly negative. So, the sentiment here isn't negative, but it's also not positive.\n\nNow, the scale is from 1 (strongly negative) to 5 (strongly positive). I should rate this. Since \"meh\" is neutral to slightly negative, maybe a 2? Wait, let's think again. If it's \"meh\", it's not a strong negative like \"terrible\" or \"awful\", which would be 1. But it's not positive either. So, maybe a 2 or 3? Hmm.\n\nWait, the user said a score of 1 is strongly negative, 5 is strongly positive. \"Meh\" is like \"meh, whatever\", so it's a bit negative but not strong. So, maybe a 2. But sometimes people use \"meh\" to mean it's average, which would be neutral, but on the scale, neutral might be 3. Wait, but the scale is 1-5. Let me check examples. If someone says \"this is boring\", that's negative. \"Meh\" is like a mild negative. So, maybe 2.\n\nWait, let's see. If it's \"meh\", it's not a strong negative, so not 1. It's not positive, so not 3 or above. So, between 1 and 2. But the scale is integer scores. So, 2 would be the lowest negative, but maybe it's considered neutral. Wait, but the scale goes from 1 (strongly negative) to 5 (strongly positive). So, neutral would be around 3. But \"meh\" is not neutral; it's slightly negative. So, maybe 2.\n\nWait, another way: if I think of \"meh\" as \"meh, this is okay but not great\", it's a bit negative. So, a 2. But I've seen some sentiment analysis models that rate \"meh\" as a 2. Let me confirm. For example, if someone says \"this movie was meh\", they mean it was average but not good. Wait, but \"meh\" is more like \"meh\" as in not impressed, so slightly negative. So, maybe 2.\n\nAlternatively, maybe 3 is neutral. But \"meh\" is not neutral, it's leaning negative. So, 2. Let's go with 2.\n</think>\n\n{\n  \"sentiment\": 2\n}",
+    "templateId": "1756811752853",
+    "provider": "ollama"
+  },
+  {
+    "id": 0,
+    "input": {
+      "input_text": "this is total shit"
+    },
+    "output": "<think>\nOkay, let's see. The user wants me to rate the sentiment of the input text \"this is total shit\" on a scale from 1 to 5. I need to figure out if it's strongly negative, which would be a 1.\n\nFirst, I'll look at the words used. \"Total shit\" is a strong negative phrase. \"Shit\" is a vulgar term expressing something very bad, and \"total\" emphasizes it. So this is definitely a negative sentiment.\n\nNow, checking the scale: 1 is strongly negative, 5 is strongly positive. There's no ambiguity here. The phrase is clearly expressing strong dislike or frustration. So the sentiment should be 1.\n\nI need to make sure there's no sarcasm or context I'm missing, but the text is straightforward. No other words or context provided, so it's a direct negative statement. Yep, 1 is the right score.\n</think>\n\n{\n  \"sentiment\": 1\n}",
+    "templateId": "1756811752853",
+    "provider": "ollama"
+  },
+  {
+    "id": 1,
+    "input": {
+      "input_text": "this is amazing"
+    },
+    "output": "<think>\nOkay, let's see. The user wants me to rate the sentiment of the input text \"this is amazing\" on a scale from 1 to 5. I need to make sure I understand what each score means. Score 1 is strongly negative, 5 is strongly positive.\n\nThe phrase \"this is amazing\" is clearly positive. Words like \"amazing\" are strong positive adjectives. There's no sarcasm or negative context here. So it's definitely a positive sentiment. \n\nNow, how positive? \"Amazing\" is a very strong word, so it should be a 5. If it was \"this is good,\" maybe a 4, but \"amazing\" pushes it to the highest score. Let me confirm: 5 is strongly positive, so yes, \"amazing\" fits that.\n\nNo other words in the text that might contradict it. So the sentiment score should be 5. I need to output only the JSON with \"sentiment\": 5. Let me check the format again to make sure. The example says to use a JSON object with \"sentiment\" as the key and the score as the value. So the output should be {\"sentiment\": 5}.\n\nWait, the user said to use only JSON output in that specific format. So no extra text, just the JSON. Alright, that's straightforward. I think that's it.\n</think>\n\n{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "ollama"
+  },
+  {
+    "id": 2,
+    "input": {
+      "input_text": "this is meh"
+    },
+    "output": "<think>\nOkay, let's tackle this sentiment analysis. The input text is \"this is meh\". I need to rate it on a scale from 1 to 5, where 1 is strongly negative and 5 is strongly positive.\n\nFirst, I should understand what \"meh\" means. From what I know, \"meh\" is an expression of indifference or mediocrity. It's like saying something is neither good nor bad, just okay. So, the sentiment here isn't negative, but it's not positive either. It's neutral to slightly negative.\n\nNow, considering the scale: 1 is strongly negative, 5 is strongly positive. Neutral would be around 3. But \"meh\" is a bit more on the negative side of neutral because it's expressing a lack of enthusiasm. If someone says \"meh\", they're probably not happy, but not angry either. So maybe a 2 or 3?\n\nWait, the user said \"meh\" as in the word. Let me think of examples. If someone says \"This movie is meh\", they mean it's unimpressive, not good. So that's slightly negative. So, maybe a 2? But sometimes \"meh\" is used to mean \"meh\" as in not worth mentioning, so maybe a 3. Hmm.\n\nWait, the scale: 1 is strongly negative, 5 is positive. So 3 is neutral. If \"meh\" is a bit negative, then maybe 2. Let's check some references. In sentiment analysis, \"meh\" is often classified as neutral or slightly negative. For example, on some scales, \"meh\" would be a 2.5, but since we have to choose integers, maybe 2.\n\nWait, but the problem says to use integers from 1 to 5. So, if it's slightly negative, 2. If it's neutral, 3. Let's see. If the user wrote \"this is meh\", they're saying it's not good, just average. So, not positive, not strongly negative. But \"meh\" is more negative than neutral. Like, if something is \"meh\", it's below average. So maybe 2.\n\nWait, another angle: \"meh\" is like \"eh\" which is a sigh, expressing indifference. So it's not a strong negative, but it's not positive. So maybe 2.5, but since we need an integer, round to 2 or 3. But in sentiment analysis, sometimes neutral is 3, and \"meh\" is considered a low score. Let me think of other examples. If someone says \"this is boring\", that's a 2. \"Meh\" is similar to that. So perhaps 2.\n\nBut maybe in some contexts, \"meh\" is a 3. Wait, the user's instruction says \"score of 1 means strongly negative, 5 strongly positive\". So 3 is neutral. If \"meh\" is neutral, then 3. But I think \"meh\" is a bit more negative than neutral. Like, \"meh\" is a way to say \"it's not good, but not bad either\", but leaning towards not good. So maybe 2.\n\nWait, let's see some online examples. If I search \"meh sentiment score\", some sources say \"meh\" is a negative sentiment, but not strong. So maybe 2. For example, a movie review saying \"meh\" would be a 2 or 3. But in this case, the input is \"this is meh\", so it's a statement of indifference, which is slightly negative. So I think 2 is the right score here.\n</think>\n\n{\n  \"sentiment\": 2\n}",
+    "templateId": "1756811752853",
+    "provider": "ollama"
+  },
+  {
+    "id": 3,
+    "input": {
+      "input_text": "this is great"
+    },
+    "output": "<think>\nOkay, let's see. The user wants me to rate the sentiment of the input text \"this is great\" on a scale from 1 to 5. So, first, I need to figure out what the sentiment here is.\n\nThe phrase \"this is great\" is clearly positive. Words like \"great\" are strong positive indicators. There's no sarcasm or negative context here. So, it's a positive statement. Now, I need to map that to a score between 1 and 5. A score of 5 is strongly positive, so \"great\" should be a 5. Let me check if there's any reason it might be lower. Maybe if it was \"this is great, but...\" but there's no such thing here. It's a straightforward positive statement. So the sentiment score should be 5.\n</think>\n\n{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "ollama"
+  },
+  {
+    "id": 4,
+    "input": {
+      "input_text": "this is bad"
+    },
+    "output": "<think>\nOkay, let's tackle this sentiment analysis task. The user provided an input text: \"this is bad\" and wants a score from 1 to 5, with 1 being strongly negative.\n\nFirst, I need to understand the sentiment of the phrase. The word \"bad\" is clearly negative. There's no positive language here. The phrase is short and straightforward, so no ambiguity. \n\nIn sentiment analysis, words like \"bad\" usually indicate a negative sentiment. Since it's a strong negative word, the score should be low. The scale is 1 to 5, so 1 is the most negative. \n\nI should check if there's any sarcasm or context I'm missing, but the text is too short and direct. No sarcasm here. So \"this is bad\" is a clear negative statement.\n\nTherefore, the sentiment score should be 1. Let me confirm: 1 = strongly negative, 5 = strongly positive. Yep, \"bad\" fits strongly negative. So the answer is 1.\n</think>\n\n{\n  \"sentiment\": 1\n}",
+    "templateId": "1756811752853",
+    "provider": "ollama"
+  },
+  {
+    "id": 5,
+    "input": {
+      "input_text": "this is good"
+    },
+    "output": null,
+    "error": "timeout of 30000ms exceeded",
+    "templateId": "1756811752853",
+    "provider": "ollama"
+  },
+  {
+    "id": 6,
+    "input": {
+      "input_text": "this is okay"
+    },
+    "output": null,
+    "error": "timeout of 30000ms exceeded",
+    "templateId": "1756811752853",
+    "provider": "ollama"
+  },
+  {
+    "id": 7,
+    "input": {
+      "input_text": "this is terrible"
+    },
+    "output": null,
+    "error": "timeout of 30000ms exceeded",
+    "templateId": "1756811752853",
+    "provider": "ollama"
+  },
+  {
+    "id": 8,
+    "input": {
+      "input_text": "this is fantastic"
+    },
+    "output": "<think>\nOkay, let's see. The user wants me to rate the sentiment of the input text \"this is fantastic\" on a scale from 1 to 5. A score of 1 is strongly negative, 5 is strongly positive.\n\nFirst, I need to understand the sentiment of the phrase. \"This is fantastic\" – \"fantastic\" is a very positive word. It's an exclamation of approval or delight. So, the sentiment here is clearly positive.\n\nNow, considering the scale: 5 is strongly positive. Since \"fantastic\" is a strong positive adjective, the score should be 5. There's no negative language here, and the phrase is a direct positive statement.\n\nI should make sure there's no sarcasm, but the text is straightforward. The user didn't include any context suggesting irony, so I'll take it at face value.\n\nSo, the correct sentiment score is 5. I need to output only the JSON with \"sentiment\": 5. Let me double-check the instructions. The output must be in JSON format exactly as specified, no other text. Yep, so the answer is {\"sentiment\": 5}.\n</think>\n\n{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "ollama"
+  },
+  {
+    "id": 9,
+    "input": {
+      "input_text": "what a fantastic movie"
+    },
+    "output": "<think>\nOkay, let's see. The user wants me to rate the sentiment of the input text \"what a fantastic movie\" on a scale from 1 to 5.\n\nFirst, I need to understand the sentiment of the phrase. The key words here are \"fantastic\" and \"movie\". \"Fantastic\" is a strong positive adjective. So the person is saying the movie is great. That's clearly positive.\n\nNow, considering the scale: 1 is strongly negative, 5 is strongly positive. Since \"fantastic\" is a very positive word, this should be a high score. The phrase is a bit like saying \"What a great movie!\" which is enthusiastic. So maybe a 5. Wait, is there any possible negative connotation? I don't think so. \"Fantastic\" is unambiguously positive.\n\nLet me check if there are any nuances. Sometimes sarcasm can flip the sentiment, but the input here is straightforward. There's no indication of sarcasm. So \"fantastic\" is used genuinely. Therefore, the sentiment is strongly positive.\n\nSo the score should be 5. Let me confirm with examples. If someone says \"what a fantastic movie,\" that's a clear positive. Other examples: \"What a terrible movie\" would be a 1. So yes, \"fantastic\" leads to 5.\n\nNo need to overcomplicate. The answer is 5.\n</think>\n\n{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "ollama"
+  },
+  {
+    "id": 10,
+    "input": {
+      "input_text": "what a terrible movie"
+    },
+    "output": "<think>\nOkay, let's tackle this sentiment analysis task. The user wants me to rate the sentiment of the input text \"what a terrible movie\" on a scale from 1 to 5, with 1 being strongly negative and 5 strongly positive.\n\nFirst, I need to understand the input. The phrase \"what a terrible movie\" is clearly expressing a negative opinion. The word \"terrible\" is a strong negative adjective. So, the sentiment here is definitely negative.\n\nNow, considering the scale: 1 is strongly negative, 5 is positive. Since \"terrible\" is a very strong negative word, the score should be low. Let me think if there's any nuance I'm missing. The phrase is a direct complaint, no sarcasm or anything else. So, it's straightforward.\n\nTypically, words like \"terrible,\" \"awful,\" \"horrible\" would correspond to a 1 or maybe a 2. But since the scale is 1 to 5, and 1 is the strongest negative, \"terrible\" would be a 1. Let me check examples. If someone says \"this is the worst movie ever,\" that's a 1. \"Terrible\" is similar. So, the sentiment score should be 1.\n\nWait, let me make sure. The user specified that 1 is strongly negative. So yes, \"terrible\" is a strong negative term. There's no positive words here. So the answer should be 1.\n\nI should confirm there's no trick here. Sometimes people might use sarcasm, but the phrase \"what a terrible movie\" is a straightforward statement. No indication of sarcasm. So, no need to overcomplicate. The sentiment is strongly negative, so score 1.\n</think>\n\n{\n  \"sentiment\": 1\n}",
+    "templateId": "1756811752853",
+    "provider": "ollama"
+  },
+  {
+    "id": 11,
+    "input": {
+      "input_text": "what a good movie"
+    },
+    "output": "<think>\nOkay, let's see. The user wants me to rate the sentiment of the input text \"what a good movie\" on a scale from 1 to 5. So, first, I need to figure out if the sentiment here is positive, negative, or neutral.\n\nThe phrase \"what a good movie\" is a positive statement. The word \"good\" is a clear indicator of positive sentiment. There's no negative language here. The exclamation \"what a\" adds emphasis, making it even more positive. So, this should be a high score.\n\nNow, considering the scale: 1 is strongly negative, 5 is strongly positive. Since \"good\" is positive but not extremely strong like \"amazing\" or \"perfect,\" maybe it's a 4 or 5. But \"what a good movie\" is a common way to express strong approval. For example, if someone says \"What a great movie!\" that's a 5. But \"good\" is a bit less intense than \"great.\" However, in common usage, \"good\" can still be a strong positive here.\n\nWait, the example given in the problem uses \"what a good movie\" as the input. Let me think. If the input was \"what a great movie,\" it would be a 5. But \"good\" is a bit lower. However, in sentiment analysis, \"good\" is still a positive word. Maybe the score here is 4? But sometimes, even \"good\" can be a 5 if it's a strong positive. Wait, the scale is 1-5, with 5 being strongly positive. \"Good\" is positive, but not the strongest. But \"what a good movie\" is a bit emphatic. Let me check some examples.\n\nFor instance, if someone says \"This is a good movie,\" that's positive. If they say \"This is a great movie,\" that's stronger. So \"good\" might be a 4, and \"great\" would be a 5. But in the context of the phrase \"what a good movie,\" the \"what a\" is an exclamation, which adds emphasis. So maybe it's closer to a 5. Hmm.\n\nWait, the user's example input is \"what a good movie,\" so I need to rate that. Let me think of other examples. If the text was \"what a bad movie,\" that would be a 1. So \"good\" here is positive. The phrase \"what a [adjective] movie\" is a common way to express strong positive sentiment. So \"what a good movie\" is probably a 4 or 5. Let's see, maybe 4.5, but since we have to use integers, it's either 4 or 5.\n\nIn many sentiment analysis models, \"good\" is considered a positive sentiment but not the highest. For example, \"good\" might be a 3 on a scale where 1 is negative, 3 is neutral, 5 is positive. Wait, no, the scale here is 1-5 with 1 being strongly negative and 5 strongly positive. So neutral would be around 3. So \"good\" would be above neutral, maybe 4. But \"what a\" adds emphasis, so maybe 5.\n\nWait, another angle: \"what a good movie\" is a positive exclamation. If it's \"what a bad movie,\" it's negative. So the opposite. So \"good\" here is positive. The strongest positive words would be like \"amazing,\" \"excellent,\" etc., but \"good\" is still positive. However, in some contexts, \"good\" can be a mild positive. But given the exclamation \"what a,\" it's more emphatic. So I think it's safe to go with 5. Wait, but maybe not. Let's check.\n\nLooking up similar examples: if a sentence says \"This is a good movie,\" it's positive, but not the highest. If it's \"This is the best movie ever,\" that's higher. But \"what a good movie\" is a common way to say it's good, so maybe 4. But I'm a bit confused. Let's see, the user's instruction says \"strongly positive\" is 5. So \"good\" might not be strongly positive, but \"what a\" might make it stronger. Hmm.\n\nWait, maybe in the context of the phrase, \"what a good movie\" is equivalent to \"this is a good movie,\" which is positive but not the strongest. So 4. But I'm not 100% sure. However, in many sentiment analysis tasks, \"good\" is considered a positive sentiment, and with the exclamation, it's probably a 4 or 5. Let me think of standard sentiment scores. For example, in some datasets, \"good\" might be +1 on a scale from -1 to +1, which would correspond to 3 or 4 on a 1-5 scale. But since the scale is 1-5, with 3 being neutral, then \"good\" would be 4. But the exclamation \"what a\" might push it to 5.\n\nAlternatively, maybe the system expects that \"good\" is a 4, and \"great\" would be 5. So \"what a good movie\" would be 4. Let's see. If the input was \"what a great movie,\" it would be 5. So \"good\" is one step below, so 4. That makes sense. So the answer should be 4.\n\nWait, but I've seen some examples where \"good\" is rated as 4. For example, in the sentiment analysis scale, sometimes 1-3 is negative, 4-5 positive. Wait, no, the scale here is 1-5, 1 being strongly negative, 5 strongly positive. So neutral would be around 3. So \"good\" is above neutral, so 4 or 5.\n\nAnother way: think of the sentence. If someone says \"what a good movie,\" they are expressing that the movie was good, so it's a positive sentiment. The word \"good\" is a positive adjective, so the sentiment is positive. The question is how positive. Since it's not \"amazing\" or \"fantastic,\" it's probably a 4. If it were \"what a fantastic movie,\" it would be 5.\n\nTherefore, the sentiment score should be 4.\n</think>\n\n{\n  \"sentiment\": 4\n}",
+    "templateId": "1756811752853",
+    "provider": "ollama"
+  },
+  {
+    "id": 12,
+    "input": {
+      "input_text": "what a bad movie"
+    },
+    "output": "<think>\nOkay, let's see. The user wants me to rate the sentiment of the input text \"what a bad movie\" on a scale from 1 to 5. So, first, I need to figure out if this is negative or positive.\n\nThe phrase \"what a bad movie\" clearly expresses a negative opinion. The word \"bad\" is a strong negative adjective. There's no sarcasm here that I can tell, so it's straightforward.\n\nOn a scale of 1 to 5, where 1 is strongly negative and 5 is strongly positive, this should be a 1. Wait, but sometimes people might use \"bad\" in a different context, but here it's directly saying the movie is bad. So yeah, definitely negative.\n\nLet me check if there's any possible positive spin. Like, \"what a bad movie\" could be sarcastic, but without any context, I should take it literally. So the sentiment is strongly negative. So the score should be 1.\n\nWait, the scale says 1 is strongly negative, so \"bad movie\" is a strong negative statement. So yes, 1 is correct. I don't think it's a 2, because \"bad\" is pretty strong. So the answer is 1.\n</think>\n\n{\n  \"sentiment\": 1\n}",
+    "templateId": "1756811752853",
+    "provider": "ollama"
+  },
+  {
+    "id": 13,
+    "input": {
+      "input_text": "what a great movie"
+    },
+    "output": "<think>\nOkay, let's see. The user wants me to rate the sentiment of the input text \"what a great movie\" on a scale from 1 to 5. First, I need to understand the sentiment here. The phrase \"what a great movie\" is clearly positive. Words like \"great\" are strong positive adjectives. There's no negative words here. So, the sentiment should be high.\n\nNow, the scale is 1 to 5, with 5 being strongly positive. Since \"great\" is a very positive term, I should give it a 5. Let me check if there's any sarcasm, but the input doesn't have any context suggesting that. It's straightforward. So the sentiment score should be 5.\n</think>\n\n{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "ollama"
+  },
+  {
+    "id": 14,
+    "input": {
+      "input_text": "what a terrible movie"
+    },
+    "output": "<think>\nOkay, let's see. The user wants me to rate the sentiment of the text \"what a terrible movie\" on a scale from 1 to 5. So, 1 is strongly negative, 5 is strongly positive.\n\nFirst, I need to understand the sentiment here. The phrase \"what a terrible movie\" clearly expresses dislike. The word \"terrible\" is a strong negative adjective. There's no positive language here, so it's definitely negative.\n\nNow, considering the scale: 1 is the most negative. Since \"terrible\" is a very strong word, this should be a 1. Let me check if there's any possible way it's not. Sometimes people might say things sarcastically, but there's no context here indicating that. So it's straightforward.\n\nSo the sentiment score should be 1. I need to make sure the output is only JSON with the sentiment key and the number 1. No other text. Let me confirm the required format again. The user specified to use only JSON in the given format. So the response should be {\"sentiment\": 1}.\n\nDouble-checking: \"terrible\" is strong negative, so 1. Yep, that's right. No need to overcomplicate it.\n</think>\n\n{\n  \"sentiment\": 1\n}",
+    "templateId": "1756811752853",
+    "provider": "ollama"
+  },
+  {
+    "id": 15,
+    "input": {
+      "input_text": "what a fantastic movie"
+    },
+    "output": "<think>\nOkay, let's see. The user wants me to rate the sentiment of the input text \"what a fantastic movie\" on a scale from 1 to 5. So, first, I need to understand the sentiment here.\n\nThe phrase \"what a fantastic movie\" has the word \"fantastic,\" which is a strong positive adjective. Words like \"fantastic\" usually indicate high praise. There's no negative language here. The exclamation point also adds to the positive tone.\n\nI should check if there's any sarcasm, but the text is straightforward. \"Fantastic\" is unambiguously positive. So the sentiment should be high. On a scale of 1 to 5, 5 is the highest positive. So the score should be 5.\n\nWait, let me make sure. Sometimes people might say something sarcastically, but without any context, I have to go with the literal meaning. \"Fantastic\" is a strong positive word. So yeah, definitely a 5.\n\nThe user specified to output only JSON in the given format. So I need to make sure the JSON is correct. No extra text, just the JSON object with \"sentiment\" as 5.\n\nDouble-checking the instructions: \"Use only JSON output in the following format as your only output.\" So no other text. Alright, the answer is 5.\n</think>\n\n{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "ollama"
+  },
+  {
+    "id": 0,
+    "input": {
+      "input_text": "this is total shit"
+    },
+    "output": null,
+    "error": "Request failed with status code 400",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 1,
+    "input": {
+      "input_text": "this is amazing"
+    },
+    "output": null,
+    "error": "Request failed with status code 400",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 2,
+    "input": {
+      "input_text": "this is meh"
+    },
+    "output": null,
+    "error": "Request failed with status code 400",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 3,
+    "input": {
+      "input_text": "this is great"
+    },
+    "output": null,
+    "error": "Request failed with status code 400",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 4,
+    "input": {
+      "input_text": "this is bad"
+    },
+    "output": null,
+    "error": "Request failed with status code 400",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 5,
+    "input": {
+      "input_text": "this is good"
+    },
+    "output": null,
+    "error": "Request failed with status code 400",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 6,
+    "input": {
+      "input_text": "this is okay"
+    },
+    "output": null,
+    "error": "Request failed with status code 400",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 7,
+    "input": {
+      "input_text": "this is terrible"
+    },
+    "output": null,
+    "error": "Request failed with status code 400",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 8,
+    "input": {
+      "input_text": "this is fantastic"
+    },
+    "output": null,
+    "error": "Request failed with status code 400",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 9,
+    "input": {
+      "input_text": "what a fantastic movie"
+    },
+    "output": null,
+    "error": "Request failed with status code 400",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 10,
+    "input": {
+      "input_text": "what a terrible movie"
+    },
+    "output": null,
+    "error": "Request failed with status code 400",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 11,
+    "input": {
+      "input_text": "what a good movie"
+    },
+    "output": null,
+    "error": "Request failed with status code 400",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 12,
+    "input": {
+      "input_text": "what a bad movie"
+    },
+    "output": null,
+    "error": "Request failed with status code 400",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 13,
+    "input": {
+      "input_text": "what a great movie"
+    },
+    "output": null,
+    "error": "Request failed with status code 400",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 14,
+    "input": {
+      "input_text": "what a terrible movie"
+    },
+    "output": null,
+    "error": "Request failed with status code 400",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 15,
+    "input": {
+      "input_text": "what a fantastic movie"
+    },
+    "output": null,
+    "error": "Request failed with status code 400",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 0,
+    "input": {
+      "input_text": "this is total shit"
+    },
+    "output": null,
+    "error": "Bad request: Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead.",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 1,
+    "input": {
+      "input_text": "this is amazing"
+    },
+    "output": null,
+    "error": "Bad request: Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead.",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 2,
+    "input": {
+      "input_text": "this is meh"
+    },
+    "output": null,
+    "error": "Bad request: Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead.",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 3,
+    "input": {
+      "input_text": "this is great"
+    },
+    "output": null,
+    "error": "Bad request: Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead.",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 4,
+    "input": {
+      "input_text": "this is bad"
+    },
+    "output": null,
+    "error": "Bad request: Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead.",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 5,
+    "input": {
+      "input_text": "this is good"
+    },
+    "output": null,
+    "error": "Bad request: Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead.",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 6,
+    "input": {
+      "input_text": "this is okay"
+    },
+    "output": null,
+    "error": "Bad request: Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead.",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 7,
+    "input": {
+      "input_text": "this is terrible"
+    },
+    "output": null,
+    "error": "Bad request: Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead.",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 8,
+    "input": {
+      "input_text": "this is fantastic"
+    },
+    "output": null,
+    "error": "Bad request: Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead.",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 9,
+    "input": {
+      "input_text": "what a fantastic movie"
+    },
+    "output": null,
+    "error": "Bad request: Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead.",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 10,
+    "input": {
+      "input_text": "what a terrible movie"
+    },
+    "output": null,
+    "error": "Bad request: Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead.",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 11,
+    "input": {
+      "input_text": "what a good movie"
+    },
+    "output": null,
+    "error": "Bad request: Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead.",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 12,
+    "input": {
+      "input_text": "what a bad movie"
+    },
+    "output": null,
+    "error": "Bad request: Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead.",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 13,
+    "input": {
+      "input_text": "what a great movie"
+    },
+    "output": null,
+    "error": "Bad request: Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead.",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 14,
+    "input": {
+      "input_text": "what a terrible movie"
+    },
+    "output": null,
+    "error": "Bad request: Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead.",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 15,
+    "input": {
+      "input_text": "what a fantastic movie"
+    },
+    "output": null,
+    "error": "Bad request: Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead.",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 0,
+    "input": {
+      "input_text": "this is total shit"
+    },
+    "output": null,
+    "error": "Bad request: Unsupported value: 'temperature' does not support 0.7 with this model. Only the default (1) value is supported.",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 1,
+    "input": {
+      "input_text": "this is amazing"
+    },
+    "output": null,
+    "error": "Bad request: Unsupported value: 'temperature' does not support 0.7 with this model. Only the default (1) value is supported.",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 2,
+    "input": {
+      "input_text": "this is meh"
+    },
+    "output": null,
+    "error": "Bad request: Unsupported value: 'temperature' does not support 0.7 with this model. Only the default (1) value is supported.",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 3,
+    "input": {
+      "input_text": "this is great"
+    },
+    "output": null,
+    "error": "Bad request: Unsupported value: 'temperature' does not support 0.7 with this model. Only the default (1) value is supported.",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 4,
+    "input": {
+      "input_text": "this is bad"
+    },
+    "output": null,
+    "error": "Bad request: Unsupported value: 'temperature' does not support 0.7 with this model. Only the default (1) value is supported.",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 5,
+    "input": {
+      "input_text": "this is good"
+    },
+    "output": null,
+    "error": "Bad request: Unsupported value: 'temperature' does not support 0.7 with this model. Only the default (1) value is supported.",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 6,
+    "input": {
+      "input_text": "this is okay"
+    },
+    "output": null,
+    "error": "Bad request: Unsupported value: 'temperature' does not support 0.7 with this model. Only the default (1) value is supported.",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 7,
+    "input": {
+      "input_text": "this is terrible"
+    },
+    "output": null,
+    "error": "Bad request: Unsupported value: 'temperature' does not support 0.7 with this model. Only the default (1) value is supported.",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 8,
+    "input": {
+      "input_text": "this is fantastic"
+    },
+    "output": null,
+    "error": "Bad request: Unsupported value: 'temperature' does not support 0.7 with this model. Only the default (1) value is supported.",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 9,
+    "input": {
+      "input_text": "what a fantastic movie"
+    },
+    "output": null,
+    "error": "Bad request: Unsupported value: 'temperature' does not support 0.7 with this model. Only the default (1) value is supported.",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 10,
+    "input": {
+      "input_text": "what a terrible movie"
+    },
+    "output": null,
+    "error": "Bad request: Unsupported value: 'temperature' does not support 0.7 with this model. Only the default (1) value is supported.",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 11,
+    "input": {
+      "input_text": "what a good movie"
+    },
+    "output": null,
+    "error": "Bad request: Unsupported value: 'temperature' does not support 0.7 with this model. Only the default (1) value is supported.",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 12,
+    "input": {
+      "input_text": "what a bad movie"
+    },
+    "output": null,
+    "error": "Bad request: Unsupported value: 'temperature' does not support 0.7 with this model. Only the default (1) value is supported.",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 13,
+    "input": {
+      "input_text": "what a great movie"
+    },
+    "output": null,
+    "error": "Bad request: Unsupported value: 'temperature' does not support 0.7 with this model. Only the default (1) value is supported.",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 14,
+    "input": {
+      "input_text": "what a terrible movie"
+    },
+    "output": null,
+    "error": "Bad request: Unsupported value: 'temperature' does not support 0.7 with this model. Only the default (1) value is supported.",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 15,
+    "input": {
+      "input_text": "what a fantastic movie"
+    },
+    "output": null,
+    "error": "Bad request: Unsupported value: 'temperature' does not support 0.7 with this model. Only the default (1) value is supported.",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 0,
+    "input": {
+      "input_text": "this is total shit"
+    },
+    "output": "{\n  \"sentiment\": 1\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 1,
+    "input": {
+      "input_text": "this is amazing"
+    },
+    "output": "{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 2,
+    "input": {
+      "input_text": "this is meh"
+    },
+    "output": "{\n  \"sentiment\": 2\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 3,
+    "input": {
+      "input_text": "this is great"
+    },
+    "output": "{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 4,
+    "input": {
+      "input_text": "this is bad"
+    },
+    "output": "{\n  \"sentiment\": 1\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 5,
+    "input": {
+      "input_text": "this is good"
+    },
+    "output": "{\n  \"sentiment\": 4\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 6,
+    "input": {
+      "input_text": "this is okay"
+    },
+    "output": "{\n  \"sentiment\": 3\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 7,
+    "input": {
+      "input_text": "this is terrible"
+    },
+    "output": "{\n  \"sentiment\": 1\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 8,
+    "input": {
+      "input_text": "this is fantastic"
+    },
+    "output": "{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 9,
+    "input": {
+      "input_text": "what a fantastic movie"
+    },
+    "output": "{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 10,
+    "input": {
+      "input_text": "what a terrible movie"
+    },
+    "output": "{\n  \"sentiment\": 1\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 11,
+    "input": {
+      "input_text": "what a good movie"
+    },
+    "output": "{\n  \"sentiment\": 4\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 12,
+    "input": {
+      "input_text": "what a bad movie"
+    },
+    "output": "{\n  \"sentiment\": 1\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 13,
+    "input": {
+      "input_text": "what a great movie"
+    },
+    "output": "{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 14,
+    "input": {
+      "input_text": "what a terrible movie"
+    },
+    "output": "{\n  \"sentiment\": 1\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 15,
+    "input": {
+      "input_text": "what a fantastic movie"
+    },
+    "output": "{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 0,
+    "input": {
+      "input_text": "this is total shit"
+    },
+    "output": "{\n  \"sentiment\": 1\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 1,
+    "input": {
+      "input_text": "this is amazing"
+    },
+    "output": "{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 2,
+    "input": {
+      "input_text": "this is meh"
+    },
+    "output": "{\n  \"sentiment\": 2\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 3,
+    "input": {
+      "input_text": "this is great"
+    },
+    "output": "{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 4,
+    "input": {
+      "input_text": "this is bad"
+    },
+    "output": "{\n  \"sentiment\": 1\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 5,
+    "input": {
+      "input_text": "this is good"
+    },
+    "output": "{\n  \"sentiment\": [4]\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 6,
+    "input": {
+      "input_text": "this is okay"
+    },
+    "output": "{\n  \"sentiment\": 3\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 7,
+    "input": {
+      "input_text": "this is terrible"
+    },
+    "output": "{\n  \"sentiment\": 1\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 8,
+    "input": {
+      "input_text": "this is fantastic"
+    },
+    "output": "{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 9,
+    "input": {
+      "input_text": "what a fantastic movie"
+    },
+    "output": "{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 10,
+    "input": {
+      "input_text": "what a terrible movie"
+    },
+    "output": "{\n  \"sentiment\": 1\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 11,
+    "input": {
+      "input_text": "what a good movie"
+    },
+    "output": "{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 12,
+    "input": {
+      "input_text": "what a bad movie"
+    },
+    "output": "{\n  \"sentiment\": [1]\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 13,
+    "input": {
+      "input_text": "what a great movie"
+    },
+    "output": "{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 14,
+    "input": {
+      "input_text": "what a terrible movie"
+    },
+    "output": "{\n  \"sentiment\": 1\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 15,
+    "input": {
+      "input_text": "what a fantastic movie"
+    },
+    "output": "{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 0,
+    "input": {
+      "input_text": "this is total shit"
+    },
+    "output": "{\n  \"sentiment\": 1\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 1,
+    "input": {
+      "input_text": "this is amazing"
+    },
+    "output": "{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 2,
+    "input": {
+      "input_text": "this is meh"
+    },
+    "output": "{\n  \"sentiment\": 2\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 3,
+    "input": {
+      "input_text": "this is great"
+    },
+    "output": "{\n  \"sentiment\": 4\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 4,
+    "input": {
+      "input_text": "this is bad"
+    },
+    "output": "{\n  \"sentiment\": 2\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 5,
+    "input": {
+      "input_text": "this is good"
+    },
+    "output": "{\n  \"sentiment\": 4\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 6,
+    "input": {
+      "input_text": "this is okay"
+    },
+    "output": "{\n  \"sentiment\": 3\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 7,
+    "input": {
+      "input_text": "this is terrible"
+    },
+    "output": "{\n  \"sentiment\": [1]\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 8,
+    "input": {
+      "input_text": "this is fantastic"
+    },
+    "output": "{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 9,
+    "input": {
+      "input_text": "what a fantastic movie"
+    },
+    "output": "{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 10,
+    "input": {
+      "input_text": "what a terrible movie"
+    },
+    "output": "{\n  \"sentiment\": 1\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 11,
+    "input": {
+      "input_text": "what a good movie"
+    },
+    "output": "{\n  \"sentiment\": [4]\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 12,
+    "input": {
+      "input_text": "what a bad movie"
+    },
+    "output": "{\n  \"sentiment\": 2\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 13,
+    "input": {
+      "input_text": "what a great movie"
+    },
+    "output": "{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 14,
+    "input": {
+      "input_text": "what a terrible movie"
+    },
+    "output": "{\n  \"sentiment\": 1\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 15,
+    "input": {
+      "input_text": "what a fantastic movie"
+    },
+    "output": "{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 0,
+    "input": {
+      "input_text": "this is total shit"
+    },
+    "output": "{\n  \"sentiment\": 1\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 1,
+    "input": {
+      "input_text": "this is amazing"
+    },
+    "output": "{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 2,
+    "input": {
+      "input_text": "this is meh"
+    },
+    "output": "{\n  \"sentiment\": 2\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 3,
+    "input": {
+      "input_text": "this is great"
+    },
+    "output": "{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 4,
+    "input": {
+      "input_text": "this is bad"
+    },
+    "output": "{\n  \"sentiment\": 2\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 5,
+    "input": {
+      "input_text": "this is good"
+    },
+    "output": "{\n  \"sentiment\": 4\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 6,
+    "input": {
+      "input_text": "this is okay"
+    },
+    "output": "{\n  \"sentiment\": 3\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 7,
+    "input": {
+      "input_text": "this is terrible"
+    },
+    "output": "{\n  \"sentiment\": 1\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 8,
+    "input": {
+      "input_text": "this is fantastic"
+    },
+    "output": "{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 9,
+    "input": {
+      "input_text": "what a fantastic movie"
+    },
+    "output": "{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 10,
+    "input": {
+      "input_text": "what a terrible movie"
+    },
+    "output": "{\n  \"sentiment\": 1\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 11,
+    "input": {
+      "input_text": "what a good movie"
+    },
+    "output": "{\n  \"sentiment\": 4\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 12,
+    "input": {
+      "input_text": "what a bad movie"
+    },
+    "output": "{\n  \"sentiment\": 2\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 13,
+    "input": {
+      "input_text": "what a great movie"
+    },
+    "output": "{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 14,
+    "input": {
+      "input_text": "what a terrible movie"
+    },
+    "output": "{\n  \"sentiment\": 1\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 15,
+    "input": {
+      "input_text": "what a fantastic movie"
+    },
+    "output": "{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
   }
 ]

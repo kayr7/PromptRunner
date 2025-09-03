@@ -111,22 +111,41 @@ function setupIpcHandlers (mainWindow) {
     });
 
     ipcMain.handle("get-ollama-models", async (event, url) => {
-
         try {
-
             const response = await axios.get(`${url}/api/tags`, {
                 timeout: 5000
             });
-
             const models = response.data.models || [];
             return {"success": true, "models": models.map(model => model.name)};
-
         } catch (error) {
-
             return {"success": false, "error": error.message};
-
         }
+    });
 
+    ipcMain.handle("get-openai-models", async (event, apiKey) => {
+        try {
+            const response = await axios.get("https://api.openai.com/v1/models", {
+                headers: {
+                    "Authorization": `Bearer ${apiKey}`
+                },
+                timeout: 10000
+            });
+            
+            // Filter for chat models and sort by name
+            const models = response.data.data
+                .filter(model => model.id.includes('gpt') || model.id.includes('claude') || model.id.includes('gemini'))
+                .map(model => ({
+                    id: model.id,
+                    name: model.id,
+                    created: model.created,
+                    object: model.object
+                }))
+                .sort((a, b) => a.name.localeCompare(b.name));
+            
+            return {"success": true, "models": models};
+        } catch (error) {
+            return {"success": false, "error": error.message};
+        }
     });
 
     // Helper function for executing prompts
@@ -145,15 +164,37 @@ function setupIpcHandlers (mainWindow) {
 
                 return {"success": true, "result": response.data.response};
             } else if (provider === "openai") {
-                const response = await axios.post("https://api.openai.com/v1/chat/completions", {
+                // Use standard chat completions format for all models
+                console.log("OpenAI request:", {
+                    model: config.model,
+                    systemPrompt: config.systemPrompt,
+                    userPrompt: prompt,
+                    maxTokens: config.maxTokens,
+                    temperature: config.temperature
+                });
+                
+                // Determine if using GPT-5 which has specific requirements
+                const isGPT5 = config.model && config.model.includes('gpt-5');
+                const requestBody = {
                     model: config.model,
                     messages: [
                         {"role": "system", "content": config.systemPrompt || "You are a helpful assistant."},
                         {"role": "user", "content": prompt}
-                    ],
-                    max_tokens: config.maxTokens || 1000,
-                    temperature: config.temperature || 0.7
-                }, {
+                    ]
+                };
+                
+                // GPT-5 has specific requirements:
+                // - Uses max_completion_tokens instead of max_tokens
+                // - Only supports default temperature (1), no custom values
+                if (isGPT5) {
+                    requestBody.max_completion_tokens = config.maxTokens || 1000;
+                    // Don't set temperature for GPT-5 - it only supports default (1)
+                } else {
+                    requestBody.max_tokens = config.maxTokens || 1000;
+                    requestBody.temperature = config.temperature || 0.7;
+                }
+                
+                const response = await axios.post("https://api.openai.com/v1/chat/completions", requestBody, {
                     headers: {
                         "Authorization": `Bearer ${config.apiKey}`,
                         "Content-Type": "application/json"
@@ -166,7 +207,16 @@ function setupIpcHandlers (mainWindow) {
 
             return {"success": false, "error": "Unknown provider"};
         } catch (error) {
-            return {"success": false, "error": error.message};
+            console.error("Execute prompt error:", error.response?.data || error.message);
+            if (error.response?.status === 400) {
+                return {"success": false, "error": `Bad request: ${error.response.data?.error?.message || error.message}`};
+            } else if (error.response?.status === 401) {
+                return {"success": false, "error": "Invalid API key"};
+            } else if (error.response?.status === 429) {
+                return {"success": false, "error": "Rate limit exceeded"};
+            } else {
+                return {"success": false, "error": error.message};
+            }
         }
     }
 
@@ -494,13 +544,36 @@ function setupIpcHandlers (mainWindow) {
 
         try {
 
-            // TODO: Implement secure API key storage
-            console.log(`Saving API key for ${provider}`);
+            const fs = require("fs");
+            const path = require("path");
+            
+            // Create config directory if it doesn't exist
+            const configDir = path.join(__dirname, "../../data/config");
+            if (!fs.existsSync(configDir)) {
+                fs.mkdirSync(configDir, { recursive: true });
+            }
+            
+            // Save API key to config file
+            const configFile = path.join(configDir, "api-keys.json");
+            let config = {};
+            
+            // Load existing config if it exists
+            if (fs.existsSync(configFile)) {
+                const configData = fs.readFileSync(configFile, "utf8");
+                config = JSON.parse(configData);
+            }
+            
+            // Save the API key
+            config[provider] = key;
+            fs.writeFileSync(configFile, JSON.stringify(config, null, 2));
+            
+            console.log(`Saved API key for ${provider}`);
 
             return {"success": true};
 
         } catch (error) {
 
+            console.error("Error saving API key:", error);
             return {"success": false,
                 "error": error.message};
 
@@ -512,12 +585,26 @@ function setupIpcHandlers (mainWindow) {
 
         try {
 
-            // TODO: Implement secure API key retrieval
-            return {"success": true,
-                "key": null};
+            const fs = require("fs");
+            const path = require("path");
+            
+            // Check if config file exists
+            const configFile = path.join(__dirname, "../../data/config/api-keys.json");
+            if (!fs.existsSync(configFile)) {
+                return {"success": true, "key": null};
+            }
+            
+            // Load config
+            const configData = fs.readFileSync(configFile, "utf8");
+            const config = JSON.parse(configData);
+            
+            const key = config[provider] || null;
+
+            return {"success": true, "key": key};
 
         } catch (error) {
 
+            console.error("Error loading API key:", error);
             return {"success": false,
                 "error": error.message};
 

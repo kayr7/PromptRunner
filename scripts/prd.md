@@ -17,9 +17,10 @@ PromptRunner is an Electron application designed to facilitate easy interaction 
 
 ### 3. LLM Provider Integration
 - **Local LLMs**: Support for Ollama integration for local model execution
-- **Cloud LLMs**: OpenAI API integration for GPT models
+- **Cloud LLMs**: OpenAI API integration for GPT models (including GPT-5 with proper parameter handling - max_completion_tokens, default temperature)
 - **API Key Management**: Secure storage and management of API keys
 - **Provider Switching**: Easy switching between different LLM providers
+- **Model Discovery**: Automatic fetching of available models from OpenAI API
 
 ### 4. Data Input Management
 - **JSONL File Support**: Load and process data from JSONL files
@@ -36,6 +37,8 @@ PromptRunner is an Electron application designed to facilitate easy interaction 
 - **Aggregation Tools**: Analyze and aggregate results across multiple executions
 - **Tabular Display**: Automatically parse JSON outputs into a flattened table with a union of fields across runs; missing values are rendered as NULL
 - **Aggregations**: Compute numeric statistics (sum, average, median) and categorical distributions (value frequencies with percentages)
++ **Tabular Display**: Automatically parse JSON outputs into a flattened table with a union of fields across runs; missing values are rendered as NULL. Handles mixed content by extracting JSON objects from text.
++ **Aggregations**: Compute numeric statistics (sum, average, median) and categorical distributions (value frequencies with percentages). JSON extraction works even when outputs contain explanatory text mixed with structured data.
   - Categorical aggregation is performed only for columns with < 50 distinct classes; otherwise it is skipped.
   - Distributions are visualized with inline histograms.
 - **Export Capabilities**: Export results in various formats (JSON, CSV, etc.)

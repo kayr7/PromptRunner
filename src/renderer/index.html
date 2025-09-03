@@ -217,10 +217,9 @@
                     <div class="config-group">
                       <label for="openai-model" class="label">Model</label>
                       <select id="openai-model" class="select">
-                        <option value="gpt-4">GPT-4</option>
-                        <option value="gpt-4-turbo">GPT-4 Turbo</option>
-                        <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                        <option value="">Select model...</option>
                       </select>
+                      <button id="refresh-openai-models-btn" class="btn btn-text" style="margin-top: 4px;">Refresh Models</button>
                     </div>
                   </div>
                   <div class="provider-actions">
@@ -360,6 +359,9 @@
                   </div>
                   <div class="aggregation-section" style="margin-top: 16px;">
                     <h3>Categorical Columns</h3>
+                    <div style="margin-bottom: 8px;">
+                      <button id="show-categorical-histograms-btn" class="btn btn-text">Show Histograms</button>
+                    </div>
                     <div id="agg-categorical"></div>
                   </div>
                 </div>
