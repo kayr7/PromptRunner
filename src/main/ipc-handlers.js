@@ -149,30 +149,57 @@ function setupIpcHandlers (mainWindow) {
     });
 
     // Helper function for executing prompts
-    async function executePrompt(provider, prompt, config) {
+    async function executePrompt(provider, prompt, config, debugInfo = {}) {
+        const requestId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        console.log(`[Request ${requestId}] Starting prompt execution:`, {
+            provider,
+            promptLength: prompt?.length || 0,
+            promptPreview: prompt?.substring(0, 100) + (prompt?.length > 100 ? "..." : ""),
+            model: config.model,
+            systemPromptLength: config.systemPrompt?.length || 0,
+            debugInfo
+        });
+
         try {
             if (provider === "ollama") {
-                const response = await axios.post(`${config.url}/api/generate`, {
+                const requestData = {
                     "model": config.model,
                     "prompt": prompt,
                     // Ensure template's system prompt is applied for model behavior
                     "system": config.systemPrompt || undefined,
                     "stream": false
-                }, {
-                    timeout: config.timeout || 30000
+                };
+
+                console.log(`[Request ${requestId}] Ollama request data:`, {
+                    model: requestData.model,
+                    promptLength: requestData.prompt?.length,
+                    systemPromptLength: requestData.system?.length,
+                    stream: requestData.stream
                 });
 
-                return {"success": true, "result": response.data.response};
-            } else if (provider === "openai") {
-                // Use standard chat completions format for all models
-                console.log("OpenAI request:", {
-                    model: config.model,
-                    systemPrompt: config.systemPrompt,
-                    userPrompt: prompt,
-                    maxTokens: config.maxTokens,
-                    temperature: config.temperature
+                const response = await axios.post(`${config.url}/api/generate`, requestData, {
+                    timeout: config.timeout || 60000
                 });
-                
+
+                const result = response.data.response;
+                console.log(`[Request ${requestId}] Ollama response:`, {
+                    statusCode: response.status,
+                    resultLength: result?.length || 0,
+                    resultPreview: result?.substring(0, 100) + (result?.length > 100 ? "..." : ""),
+                    isEmpty: !result || result.trim() === "",
+                    responseData: response.data
+                });
+
+                if (!result || result.trim() === "") {
+                    console.warn(`[Request ${requestId}] WARNING: Empty output from Ollama!`, {
+                        responseData: response.data,
+                        model: config.model,
+                        promptLength: prompt?.length
+                    });
+                }
+
+                return {"success": true, "result": result};
+            } else if (provider === "openai") {
                 // Determine if using GPT-5 which has specific requirements
                 const isGPT5 = config.model && config.model.includes('gpt-5');
                 const requestBody = {
@@ -187,27 +214,67 @@ function setupIpcHandlers (mainWindow) {
                 // - Uses max_completion_tokens instead of max_tokens
                 // - Only supports default temperature (1), no custom values
                 if (isGPT5) {
-                    requestBody.max_completion_tokens = config.maxTokens || 1000;
+                    requestBody.max_completion_tokens = config.maxTokens || 100000;
                     // Don't set temperature for GPT-5 - it only supports default (1)
                 } else {
-                    requestBody.max_tokens = config.maxTokens || 1000;
+                    requestBody.max_tokens = config.maxTokens || 100000;
                     requestBody.temperature = config.temperature || 0.7;
                 }
+                
+                console.log(`[Request ${requestId}] OpenAI request:`, {
+                    model: requestBody.model,
+                    isGPT5: isGPT5,
+                    messageCount: requestBody.messages.length,
+                    systemPromptLength: requestBody.messages[0].content?.length || 0,
+                    userPromptLength: requestBody.messages[1].content?.length || 0,
+                    maxTokens: requestBody.max_tokens || requestBody.max_completion_tokens,
+                    temperature: requestBody.temperature
+                });
                 
                 const response = await axios.post("https://api.openai.com/v1/chat/completions", requestBody, {
                     headers: {
                         "Authorization": `Bearer ${config.apiKey}`,
                         "Content-Type": "application/json"
                     },
-                    timeout: config.timeout || 30000
+                    timeout: config.timeout || 60000
                 });
 
-                return {"success": true, "result": response.data.choices[0].message.content};
+                const result = response.data.choices[0].message.content;
+                console.log(`[Request ${requestId}] OpenAI response:`, {
+                    statusCode: response.status,
+                    choicesCount: response.data.choices?.length || 0,
+                    resultLength: result?.length || 0,
+                    resultPreview: result?.substring(0, 1000) + (result?.length > 1000 ? "..." : ""),
+                    isEmpty: !result || result.trim() === "",
+                    finishReason: response.data.choices[0]?.finish_reason,
+                    usage: response.data.usage
+                });
+
+                if (!result || result.trim() === "") {
+                    console.warn(`[Request ${requestId}] WARNING: Empty output from OpenAI!`, {
+                        choices: response.data.choices,
+                        finishReason: response.data.choices[0]?.finish_reason,
+                        usage: response.data.usage,
+                        model: config.model,
+                        promptLength: prompt?.length
+                    });
+                }
+
+                return {"success": true, "result": result};
             }
 
             return {"success": false, "error": "Unknown provider"};
         } catch (error) {
-            console.error("Execute prompt error:", error.response?.data || error.message);
+            console.error(`[Request ${requestId}] Execute prompt error:`, {
+                provider,
+                model: config.model,
+                errorMessage: error.message,
+                errorStatus: error.response?.status,
+                errorData: error.response?.data,
+                promptLength: prompt?.length,
+                debugInfo
+            });
+            
             if (error.response?.status === 400) {
                 return {"success": false, "error": `Bad request: ${error.response.data?.error?.message || error.message}`};
             } else if (error.response?.status === 401) {
@@ -225,36 +292,79 @@ function setupIpcHandlers (mainWindow) {
     });
 
     ipcMain.handle("execute-batch", async (event, provider, template, data, config) => {
+        const batchId = `batch-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        console.log(`[Batch ${batchId}] Starting batch execution:`, {
+            provider,
+            model: config.model,
+            templateId: template.id,
+            templateName: template.name,
+            dataCount: data.length,
+            systemPromptLength: template.systemPrompt?.length || 0,
+            userPromptLength: template.userPrompt?.length || 0
+        });
 
         try {
-
             const results = [];
+            let emptyOutputCount = 0;
+            let errorCount = 0;
 
             for (let i = 0; i < data.length; i++) {
                 const item = data[i];
                 
                 // Replace variables in template
                 let userPrompt = template.userPrompt;
+                const originalPrompt = userPrompt;
                 Object.keys(item).forEach(key => {
                     userPrompt = userPrompt.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), item[key]);
                 });
 
-                // Execute prompt
+                console.log(`[Batch ${batchId}] Processing item ${i + 1}/${data.length}:`, {
+                    inputKeys: Object.keys(item),
+                    originalPromptLength: originalPrompt.length,
+                    processedPromptLength: userPrompt.length,
+                    variablesReplaced: originalPrompt !== userPrompt
+                });
+
+                // Execute prompt with debug info
                 const result = await executePrompt(provider, userPrompt, {
                     ...config,
                     systemPrompt: template.systemPrompt
+                }, {
+                    batchId,
+                    itemIndex: i,
+                    totalItems: data.length,
+                    templateId: template.id
                 });
 
                 if (result.success) {
+                    const isEmptyOutput = !result.result || result.result.trim() === "";
+                    if (isEmptyOutput) {
+                        emptyOutputCount++;
+                        console.warn(`[Batch ${batchId}] Empty output detected for item ${i + 1}:`, {
+                            input: item,
+                            processedPrompt: userPrompt,
+                            resultLength: result.result?.length || 0,
+                            result: result.result
+                        });
+                    }
+
                     results.push({
                         id: i,
                         input: item,
                         output: result.result,
                         templateId: template.id,
                         provider: provider,
-                        model: config.model // Add model information
+                        model: config.model,
+                        isEmpty: isEmptyOutput // Add flag for empty outputs
                     });
                 } else {
+                    errorCount++;
+                    console.warn(`[Batch ${batchId}] Error for item ${i + 1}:`, {
+                        input: item,
+                        error: result.error,
+                        processedPrompt: userPrompt
+                    });
+
                     results.push({
                         id: i,
                         input: item,
@@ -262,7 +372,8 @@ function setupIpcHandlers (mainWindow) {
                         error: result.error,
                         templateId: template.id,
                         provider: provider,
-                        model: config.model // Add model information
+                        model: config.model,
+                        isEmpty: true // Errors also count as empty
                     });
                 }
 
@@ -277,14 +388,27 @@ function setupIpcHandlers (mainWindow) {
                 await new Promise(resolve => setTimeout(resolve, 100));
             }
 
+            console.log(`[Batch ${batchId}] Batch execution completed:`, {
+                totalItems: data.length,
+                successfulItems: results.length - errorCount,
+                errorCount: errorCount,
+                emptyOutputCount: emptyOutputCount,
+                emptyOutputPercentage: ((emptyOutputCount / data.length) * 100).toFixed(1) + '%'
+            });
+
             return {"success": true, "results": results};
 
         } catch (error) {
+            console.error(`[Batch ${batchId}] Batch execution failed:`, {
+                error: error.message,
+                stack: error.stack,
+                provider,
+                model: config.model,
+                dataCount: data.length
+            });
 
             return {"success": false, "error": error.message};
-
         }
-
     });
 
     // Template operations (implemented with file storage)
@@ -305,34 +429,46 @@ function setupIpcHandlers (mainWindow) {
                 // File doesn't exist or is invalid, start with empty array
             }
 
-            // Add or update template (handle case where renderer provided an id for new templates)
+            // Add or update template
+            const now = new Date().toISOString();
+            
             if (template.id) {
                 const index = existingTemplates.findIndex(t => t.id === template.id);
-                const now = new Date().toISOString();
-                if (index !== -1) {
-                    // Update existing
+                
+                if (index !== -1 && !template.isNewFromNameChange) {
+                    // Update existing template (same name)
                     const existing = existingTemplates[index];
+                    console.log(`Updating existing template: ${existing.name}`);
                     existingTemplates[index] = {
                         ...existing,
                         ...template,
                         "createdAt": existing.createdAt || template.createdAt || now,
-                        "updatedAt": now
+                        "updatedAt": now,
+                        "isNewFromNameChange": undefined // Remove flag
                     };
                 } else {
-                    // Treat as new if not found
+                    // Either template not found OR name changed - treat as new
+                    if (template.isNewFromNameChange) {
+                        console.log(`Creating new template from name change: ${template.name}`);
+                    } else {
+                        console.log(`Creating new template (not found in existing): ${template.name}`);
+                    }
+                    
                     const newTemplate = {
                         ...template,
                         "createdAt": template.createdAt || now,
-                        "updatedAt": now
+                        "updatedAt": now,
+                        "isNewFromNameChange": undefined // Remove flag
                     };
                     existingTemplates.push(newTemplate);
                 }
             } else {
-                // Add new template (no id provided)
-                const now = new Date().toISOString();
+                // Add completely new template (no id provided)
+                console.log(`Creating brand new template: ${template.name}`);
                 template.id = Date.now().toString();
                 template.createdAt = now;
                 template.updatedAt = now;
+                delete template.isNewFromNameChange; // Remove flag
                 existingTemplates.push(template);
             }
 

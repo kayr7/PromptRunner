@@ -340,7 +340,15 @@
                 </div>
               </div>
               <div class="results-content">
-                <div id="results-list" class="results-list">
+                <div id="results-list-container" class="hidden">
+                  <div class="results-search">
+                    <input id="results-search-input" class="search-input" type="text" placeholder="Search results by input, output, template, or provider...">
+                  </div>
+                  <div id="results-list" class="results-list">
+                    <!-- Results will be populated here -->
+                  </div>
+                </div>
+                <div id="results-list-empty" class="results-list">
                   <div class="empty-state">
                     <span class="empty-icon">📈</span>
                     <p>No results yet</p>
@@ -481,6 +489,33 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cell Content Overlay Modal -->
+  <div id="cell-content-modal" class="modal hidden">
+    <div class="modal-content cell-content-modal">
+      <div class="modal-header">
+        <h3 id="cell-content-title">Cell Content</h3>
+        <button id="close-cell-modal" class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="cell-content-info">
+          <div class="content-meta">
+            <span id="cell-column-name" class="cell-meta"></span>
+            <span id="cell-row-number" class="cell-meta"></span>
+            <span id="cell-content-type" class="cell-meta"></span>
+            <span id="cell-content-length" class="cell-meta"></span>
+          </div>
+        </div>
+        <div class="cell-content-display">
+          <pre id="cell-content-text"></pre>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="copy-cell-content" class="btn btn-secondary">Copy Content</button>
+        <button id="close-cell-content" class="btn btn-text">Close</button>
       </div>
     </div>
   </div>

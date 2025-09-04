@@ -35,10 +35,12 @@ PromptRunner is an Electron application designed to facilitate easy interaction 
 ### 6. Results Analysis
 - **Result Storage**: Store and organize execution results
 - **Aggregation Tools**: Analyze and aggregate results across multiple executions
-- **Tabular Display**: Automatically parse JSON outputs into a flattened table with a union of fields across runs; missing values are rendered as NULL
-- **Aggregations**: Compute numeric statistics (sum, average, median) and categorical distributions (value frequencies with percentages)
-+ **Tabular Display**: Automatically parse JSON outputs into a flattened table with a union of fields across runs; missing values are rendered as NULL. Handles mixed content by extracting JSON objects from text.
-+ **Aggregations**: Compute numeric statistics (sum, average, median) and categorical distributions (value frequencies with percentages). JSON extraction works even when outputs contain explanatory text mixed with structured data.
+- **Tabular Display**: Automatically parse JSON outputs into a flattened table with a union of fields across runs; missing values are rendered as NULL. Handles mixed content by extracting JSON objects from text.
+  - **Horizontal Scrolling**: Tables support horizontal scrolling for wide datasets
+  - **Resizable Columns**: Users can resize table columns by dragging column borders
+  - **Sticky Headers**: Column headers remain visible when scrolling through data
+- **Search Functionality**: Filter results in list view by searching across inputs, outputs, templates, and providers
+- **Aggregations**: Compute numeric statistics (sum, average, median) and categorical distributions (value frequencies with percentages). JSON extraction works even when outputs contain explanatory text mixed with structured data.
   - Categorical aggregation is performed only for columns with < 50 distinct classes; otherwise it is skipped.
   - Distributions are visualized with inline histograms.
 - **Result Comparison**: Side-by-side comparison of two result sets with statistical analysis

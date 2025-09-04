@@ -18,6 +18,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Results viewing and export capabilities
 - Comprehensive IPC communication system
 - Shared utilities, types, and constants
+
+### Enhanced
+- **Results Analysis Improvements**:
+  - Added horizontal scrolling to results table view for wide datasets
+  - Implemented resizable table columns with drag-to-resize functionality
+  - Added search functionality to filter results in list view by input, output, template, or provider
+  - Improved table styling with sticky headers and better cell content handling
+  - Enhanced user experience with visual feedback during column resizing
+
+### Fixed
+- **Table View**: Removed artificial row limit - table view now displays all results instead of limiting to 50 rows
+- **Performance**: Added performance optimizations for large datasets with CSS containment and viewport-based sizing
+
+### Debug & Monitoring
+- **Empty Output Debugging**: Added comprehensive logging to track when LLM requests produce empty outputs
+  - Detailed request/response logging with unique request IDs for tracing
+  - Empty output detection and warnings in both Ollama and OpenAI providers
+  - Batch execution summary showing empty output counts and percentages
+  - Visual indicators in frontend for empty outputs (badges, styling, and special handling)
+  - Enhanced error logging with context information
+- **Execution Analytics**: Added execution summary statistics showing successful/empty/error counts
+
+### Improved
+- **Template Management**: Template name changes now create new templates instead of overwriting existing ones
+  - Preserves template history when names are modified
+  - Automatic detection of name changes during editing
+  - Clear notifications distinguishing between updates and new creations
+  - Backend logging for template creation/update operations
+- **Results Comparison - Categorical Analysis**: Enhanced categorical value comparison with comprehensive statistics
+  - Detailed comparison tables showing top differences between result sets
+  - Visual distribution charts with improved bar graphs and data visualization
+  - Statistical metrics including Jaccard similarity, diversity indices, and divergence analysis
+  - Summary statistics showing shared values, unique values, and overlap coefficients
+  - Automatic interpretation of similarity scores and diversity measures
+  - Color-coded significance indicators for chi-square test results
+- **Table View - Cell Content Overlay**: Enhanced table viewing with clickable cells for detailed content inspection
+  - Click any table cell to view full content in an overlay modal
+  - Automatic content type detection (JSON, text, null, empty)
+  - Syntax highlighting and proper formatting for JSON content
+  - Copy-to-clipboard functionality for cell content
+  - Content metadata display (type, length, row/column info)
+  - Keyboard shortcuts (Escape to close) and hover indicators
+- **Results Comparison - Bug Fixes**: Fixed critical issues with categorical variable comparison
+  - Fixed column detection issue that prevented categorical analysis from running
+  - Enhanced numerical vs categorical classification for small integer ranges (1-10)
+  - Rating scales and sentiment scores now properly treated as categorical data
+  - Added comprehensive debug logging for comparison troubleshooting
+  - Improved error handling and edge case detection
+- **Text Length Analysis**: Comprehensive text analysis for all text-containing columns
+  - Text length statistics provided for ALL columns with text content (regardless of length)
+  - Dual analysis approach: categorical comparison for short text + text length stats
+  - Only very long text (avg >150 chars) skips categorical to avoid noise
+  - Statistical analysis including mean, median, range, standard deviation for all text
+  - T-test for significant differences in text lengths between result sets
+  - Handles mixed data types by converting to strings for length analysis
+  - Works even when only one result set contains text data
 - Development environment with webpack, ESLint, and testing setup
 - Documentation: PRD, PR-FAQ, Architecture, FileDoc, README
 - **Template Management**: Proper template saving, loading, editing, and deletion with file-based storage

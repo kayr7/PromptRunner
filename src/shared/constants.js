@@ -33,26 +33,26 @@ export const DEFAULT_CONFIG = {
     "ollama": {
         "url": "http://localhost:11434",
         "model": "llama2",
-        "timeout": 30000
+        "timeout": 60000
     },
     "openai": {
         "model": "gpt-3.5-turbo",
-        "maxTokens": 1000,
+        "maxTokens": 100000,
         "temperature": 0.7,
-        "timeout": 30000
+        "timeout": 60000
     }
 };
 
 // Template variables
 export const TEMPLATE_VARIABLE_REGEX = /\{\{([^}]+)\}\}/g;
 export const MAX_TEMPLATE_NAME_LENGTH = 100;
-export const MAX_PROMPT_LENGTH = 10000;
+export const MAX_PROMPT_LENGTH = 100000;
 
 // Execution settings
 export const DEFAULT_BATCH_SIZE = 10;
 export const MAX_BATCH_SIZE = 100;
 export const MIN_BATCH_SIZE = 1;
-export const EXECUTION_TIMEOUT = 300000; // 5 minutes
+export const EXECUTION_TIMEOUT = 600000; // 5 minutes
 
 // UI constants
 export const THEMES = {

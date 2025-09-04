@@ -15,6 +15,8 @@ class PromptRunnerApp {
         this.flattenedResults = [];
         this.resultsView = "list"; // list | table | aggregations
         this.isExecuting = false;
+        this.columnWidths = new Map(); // Store column widths for resizing
+        this.isResizing = false;
 
         this.init();
 
@@ -304,6 +306,11 @@ class PromptRunnerApp {
             this.filterSavedResults(e.target.value);
         });
 
+        // Results search functionality
+        document.getElementById("results-search-input").addEventListener("input", (e) => {
+            this.filterResults(e.target.value);
+        });
+
         // Compare results functionality
         document.getElementById("compare-results-btn").addEventListener("click", () => {
             this.showCompareResultsModal();
@@ -315,6 +322,19 @@ class PromptRunnerApp {
 
         document.getElementById("start-comparison-btn").addEventListener("click", () => {
             this.startComparison();
+        });
+
+        // Cell content modal functionality
+        document.getElementById("close-cell-modal").addEventListener("click", () => {
+            this.hideCellContentModal();
+        });
+
+        document.getElementById("close-cell-content").addEventListener("click", () => {
+            this.hideCellContentModal();
+        });
+
+        document.getElementById("copy-cell-content").addEventListener("click", () => {
+            this.copyCellContent();
         });
 
         // IPC event listeners
@@ -353,6 +373,17 @@ class PromptRunnerApp {
 
             this.updateTemplateVariables();
 
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener("keydown", (e) => {
+            // Escape key to close modals
+            if (e.key === "Escape") {
+                const cellModal = document.getElementById("cell-content-modal");
+                if (!cellModal.classList.contains("hidden")) {
+                    this.hideCellContentModal();
+                }
+            }
         });
 
     }
@@ -447,6 +478,7 @@ class PromptRunnerApp {
         const nameInput = document.getElementById("template-name");
         nameInput.value = "";
         delete nameInput.dataset.templateId;
+        delete nameInput.dataset.originalName; // Clear original name for new templates
         document.getElementById("system-prompt").value = "";
         document.getElementById("user-prompt").value = "";
         this.updateTemplateVariables();
@@ -480,15 +512,41 @@ class PromptRunnerApp {
         }
 
         // Check if we're editing an existing template
-        const existingTemplateId = document.getElementById("template-name").dataset.templateId;
+        const nameInput = document.getElementById("template-name");
+        const existingTemplateId = nameInput.dataset.templateId;
+        const originalName = nameInput.dataset.originalName;
+        
+        // Determine if this should be a new template
+        const isEditingExisting = !!existingTemplateId;
+        const nameChanged = isEditingExisting && originalName && originalName !== name;
+        const shouldCreateNew = nameChanged;
+        
+        let templateId;
+        let createdAt;
+        
+        if (shouldCreateNew) {
+            // Name changed - create new template
+            templateId = Date.now().toString();
+            createdAt = new Date().toISOString();
+            console.log(`Creating new template due to name change: "${originalName}" -> "${name}"`);
+        } else if (isEditingExisting) {
+            // Same name - update existing
+            templateId = existingTemplateId;
+            createdAt = undefined; // Will be preserved by backend
+        } else {
+            // Brand new template
+            templateId = Date.now().toString();
+            createdAt = new Date().toISOString();
+        }
         
         const template = {
-            "id": existingTemplateId || Date.now().toString(),
+            "id": templateId,
             name,
             systemPrompt,
             userPrompt,
             "variables": this.extractVariables(userPrompt),
-            "createdAt": existingTemplateId ? undefined : new Date().toISOString()
+            "createdAt": createdAt,
+            "isNewFromNameChange": shouldCreateNew // Flag for backend
         };
 
         try {
@@ -497,7 +555,15 @@ class PromptRunnerApp {
 
             if (result.success) {
 
-                this.showNotification("Template saved successfully", "success");
+                if (shouldCreateNew) {
+                    this.showNotification(`New template created: "${name}"`, "success");
+                    // Clear editing state since we created a new template
+                    nameInput.dataset.templateId = result.id;
+                    nameInput.dataset.originalName = name;
+                } else {
+                    this.showNotification("Template saved successfully", "success");
+                }
+                
                 // Update templates directly from the response
                 this.templates = result.templates || [];
                 this.renderTemplates();
@@ -1134,6 +1200,21 @@ class PromptRunnerApp {
             if (result.success) {
 
                 this.results = result.results;
+                
+                // Calculate execution summary
+                const totalResults = this.results.length;
+                const errorCount = this.results.filter(r => !!r.error).length;
+                const emptyCount = this.results.filter(r => r.isEmpty || (!r.output || r.output.toString().trim() === "")).length;
+                const successCount = totalResults - errorCount;
+                
+                console.log("Execution Summary:", {
+                    total: totalResults,
+                    successful: successCount,
+                    errors: errorCount,
+                    empty: emptyCount,
+                    emptyPercentage: ((emptyCount / totalResults) * 100).toFixed(1) + '%'
+                });
+                
                 // Auto-save results with metadata
                 try {
                     const template = this.templates.find(t => t.id === this.results[0]?.templateId);
@@ -1165,8 +1246,18 @@ class PromptRunnerApp {
                 } catch (e) {
                     console.error('Failed to auto-save results:', e);
                 }
-                this.showNotification("Execution completed", "success");
-                this.updateStatus(`Execution completed: ${result.results.length} results`);
+                
+                // Show completion notification with summary
+                let notificationMessage = `Execution completed: ${successCount}/${totalResults} successful`;
+                if (emptyCount > 0) {
+                    notificationMessage += `, ${emptyCount} empty outputs`;
+                }
+                if (errorCount > 0) {
+                    notificationMessage += `, ${errorCount} errors`;
+                }
+                
+                this.showNotification(notificationMessage, emptyCount > 0 || errorCount > 0 ? "warning" : "success");
+                this.updateStatus(`Execution completed: ${totalResults} results (${successCount} successful, ${emptyCount} empty, ${errorCount} errors)`);
                 this.renderResults();
                 this.switchTab("results");
 
@@ -1209,32 +1300,57 @@ class PromptRunnerApp {
     renderResults () {
 
         const list = document.getElementById("results-list");
+        const listContainer = document.getElementById("results-list-container");
+        const listEmpty = document.getElementById("results-list-empty");
 
         if (!this.results || this.results.length === 0) {
-
-            list.innerHTML = `
-      <div class="empty-state">
-        <span class="empty-icon">📈</span>
-        <p>No results yet</p>
-        <p>Execute some prompts to see results here</p>
-      </div>
-    `;
-
+            listContainer.classList.add("hidden");
+            listEmpty.classList.remove("hidden");
             return;
-
         }
+
+        // Show the list container and hide empty state
+        listContainer.classList.remove("hidden");
+        listEmpty.classList.add("hidden");
 
         // Build a map of templateId -> template name for display
         const templateNameById = {};
         this.templates.forEach(t => { templateNameById[t.id] = t.name; });
 
-        list.innerHTML = this.results.map(r => {
+        list.innerHTML = this.results.map((r, index) => {
             const title = `${templateNameById[r.templateId] || "Template"} • ${r.provider || "provider"} • #${r.id}`;
             const input = JSON.stringify(r.input, null, 2);
-            const content = r.error ? `<pre class="error">${r.error}</pre>` : `<pre>${(r.output || "").toString()}</pre>`;
+            
+            // Determine if output is empty or has error
+            const hasError = !!r.error;
+            const isEmpty = r.isEmpty || (!r.output || r.output.toString().trim() === "");
+            const hasEmptyOutput = isEmpty && !hasError;
+            
+            // Add status badges
+            let badges = "";
+            if (hasError) {
+                badges += '<span class="error-badge">Error</span>';
+            } else if (hasEmptyOutput) {
+                badges += '<span class="empty-output-badge">Empty Output</span>';
+            }
+            
+            // Determine content and styling
+            let content;
+            let itemClasses = "result-item";
+            
+            if (hasError) {
+                content = `<pre class="error">${r.error}</pre>`;
+                itemClasses += " has-error";
+            } else if (hasEmptyOutput) {
+                content = `<pre class="empty">(Empty response from ${r.provider})</pre>`;
+                itemClasses += " has-empty-output";
+            } else {
+                content = `<pre>${r.output.toString()}</pre>`;
+            }
+            
             return `
-      <div class="result-item">
-        <div class="result-header"><h4>${title}</h4></div>
+      <div class="${itemClasses}" data-result-index="${index}">
+        <div class="result-header"><h4>${title}${badges}</h4></div>
         <div class="result-body">
           <div class="result-section">
             <div class="result-label">Input</div>
@@ -1248,6 +1364,9 @@ class PromptRunnerApp {
       </div>
     `;
         }).join("");
+
+        // Clear any existing search
+        document.getElementById("results-search-input").value = "";
 
         // Precompute flattened results for table/aggregations
         try {
@@ -1266,15 +1385,34 @@ class PromptRunnerApp {
      */
     switchResultsView (view) {
         this.resultsView = view;
-        const listEl = document.getElementById("results-list");
+        const listContainerEl = document.getElementById("results-list-container");
+        const listEmptyEl = document.getElementById("results-list-empty");
         const tableEl = document.getElementById("results-table");
         const aggsEl = document.getElementById("results-aggregations");
         const hide = (el) => el.classList.add("hidden");
         const show = (el) => el.classList.remove("hidden");
-        hide(listEl); hide(tableEl); hide(aggsEl);
-        if (view === "list") show(listEl);
-        if (view === "table") { show(tableEl); this.renderResultsTable(); }
-        if (view === "aggregations") { show(aggsEl); this.renderAggregations(); }
+        
+        // Hide all views first
+        hide(listContainerEl);
+        hide(listEmptyEl);
+        hide(tableEl);
+        hide(aggsEl);
+        
+        if (view === "list") {
+            if (this.results && this.results.length > 0) {
+                show(listContainerEl);
+            } else {
+                show(listEmptyEl);
+            }
+        }
+        if (view === "table") { 
+            show(tableEl); 
+            this.renderResultsTable(); 
+        }
+        if (view === "aggregations") { 
+            show(aggsEl); 
+            this.renderAggregations(); 
+        }
     }
 
     /**
@@ -1402,18 +1540,40 @@ class PromptRunnerApp {
             return;
         }
         const { keys, rows } = this.flattenedResults;
-        thead.innerHTML = keys.map(k => `<th>${k}</th>`).join("");
-        // Limit initial rows
-        const display = rows.slice(0, 50);
-        tbody.innerHTML = display.map(r => `<tr>${keys.map(k => `<td>${this.formatCell(r[k])}</td>`).join("")}</tr>`).join("");
-        if (rows.length > 50) {
-            tbody.innerHTML += `<tr><td colspan="${keys.length}" style="text-align:center;color:var(--text-muted);">... and ${rows.length - 50} more rows</td></tr>`;
+        
+        // Create headers with resize handles
+        thead.innerHTML = keys.map((k, index) => {
+            const width = this.columnWidths.get(k) || 150;
+            return `<th class="resizable" style="width: ${width}px; min-width: 100px;" data-column="${k}" data-index="${index}">
+                <span class="column-title">${k}</span>
+                <div class="resize-handle"></div>
+            </th>`;
+        }).join("");
+        
+        // Add resize event listeners
+        this.setupColumnResize();
+        
+        // Show all rows (with performance consideration for very large datasets)
+        if (rows.length > 1000) {
+            // For very large datasets, show a warning but still display all rows
+            console.warn(`Rendering large table with ${rows.length} rows. This may affect performance.`);
         }
+        
+        tbody.innerHTML = rows.map((r, rowIndex) => `<tr>${keys.map((k, colIndex) => `<td class="cell-content" data-row="${rowIndex}" data-column="${this.escapeHtml(k)}" data-column-index="${colIndex}">${this.formatCell(r[k], k)}</td>`).join("")}</tr>`).join("");
+        
+        // Add click event listeners to cells
+        this.setupCellClickHandlers();
     }
 
-    formatCell (value) {
-        if (value === null || value === undefined) return "NULL";
+    formatCell (value, columnKey = "") {
+        if (value === null || value === undefined) return '<span style="color: var(--text-muted); font-style: italic;">NULL</span>';
         if (typeof value === "object") return `<pre>${this.safeStringify(value)}</pre>`;
+        
+        // Check for empty output columns
+        if (columnKey === "output" && (!value || value.toString().trim() === "")) {
+            return '<span style="color: var(--accent-warning); font-style: italic;">(Empty)</span>';
+        }
+        
         return String(value);
     }
 
@@ -1867,8 +2027,382 @@ class PromptRunnerApp {
         }
     }
 
-    round (v) { return Math.round(v * 1000) / 1000; }
+    round (v, decimals = 3) { 
+        const factor = Math.pow(10, decimals);
+        return Math.round(v * factor) / factor; 
+    }
+    
     escapeHtml (s) { return String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
+
+    /**
+     * Calculate diversity index (Gini-Simpson diversity index)
+     */
+    calculateDiversityIndex(frequencies, total) {
+        if (total === 0) return 0;
+        
+        let sumSquared = 0;
+        frequencies.forEach(freq => {
+            const proportion = freq / total;
+            sumSquared += proportion * proportion;
+        });
+        
+        // Simpson's diversity index (1 - sum of squared proportions)
+        return 1 - sumSquared;
+    }
+
+    /**
+     * Calculate Jaccard similarity coefficient
+     */
+    calculateJaccardSimilarity(freqA, freqB) {
+        const keysA = new Set(Object.keys(freqA));
+        const keysB = new Set(Object.keys(freqB));
+        
+        // Intersection: values present in both sets
+        const intersection = new Set([...keysA].filter(x => keysB.has(x)));
+        
+        // Union: all unique values across both sets
+        const union = new Set([...keysA, ...keysB]);
+        
+        if (union.size === 0) return 0;
+        
+        return intersection.size / union.size;
+    }
+
+    /**
+     * Analyze text length statistics for long text columns
+     */
+    analyzeTextLengths(valuesA, valuesB) {
+        const getTextStats = (values) => {
+            // Convert all values to strings for analysis (including numbers, etc.)
+            const stringValues = values
+                .filter(val => val !== null && val !== undefined)
+                .map(val => typeof val === 'string' ? val : String(val))
+                .filter(str => str.length > 0); // Remove empty strings
+                
+            if (stringValues.length === 0) return null;
+            
+            const lengths = stringValues.map(str => str.length);
+            lengths.sort((a, b) => a - b);
+            
+            const sum = lengths.reduce((a, b) => a + b, 0);
+            const mean = sum / lengths.length;
+            const median = lengths.length % 2 === 0 
+                ? (lengths[lengths.length / 2 - 1] + lengths[lengths.length / 2]) / 2
+                : lengths[Math.floor(lengths.length / 2)];
+            
+            // Calculate standard deviation
+            const variance = lengths.reduce((acc, len) => acc + Math.pow(len - mean, 2), 0) / lengths.length;
+            const stdDev = Math.sqrt(variance);
+            
+            return {
+                count: stringValues.length,
+                min: Math.min(...lengths),
+                max: Math.max(...lengths),
+                mean: this.round(mean, 1),
+                median: this.round(median, 1),
+                stdDev: this.round(stdDev, 1),
+                totalChars: sum
+            };
+        };
+        
+        const statsA = getTextStats(valuesA);
+        const statsB = getTextStats(valuesB);
+        
+        // Return analysis even if only one set has text data
+        if (!statsA && !statsB) {
+            return null;
+        }
+        
+        // Handle cases where only one set has text data
+        if (!statsA || !statsB) {
+            return {
+                setA: statsA || { count: 0, min: 0, max: 0, mean: 0, median: 0, stdDev: 0, totalChars: 0 },
+                setB: statsB || { count: 0, min: 0, max: 0, mean: 0, median: 0, stdDev: 0, totalChars: 0 },
+                comparison: {
+                    meanDifference: statsA && statsB ? this.round(statsA.mean - statsB.mean, 1) : null,
+                    medianDifference: statsA && statsB ? this.round(statsA.median - statsB.median, 1) : null,
+                    meanPercentChange: null
+                },
+                tTest: null
+            };
+        }
+        
+        // Perform t-test on text lengths if we have enough data
+        let tTest = null;
+        if (statsA.count >= 3 && statsB.count >= 3) {
+            const lengthsA = valuesA
+                .filter(val => val !== null && val !== undefined)
+                .map(val => typeof val === 'string' ? val : String(val))
+                .filter(str => str.length > 0)
+                .map(str => str.length);
+            const lengthsB = valuesB
+                .filter(val => val !== null && val !== undefined)
+                .map(val => typeof val === 'string' ? val : String(val))
+                .filter(str => str.length > 0)
+                .map(str => str.length);
+            tTest = this.performTTest(lengthsA, lengthsB);
+        }
+        
+        return {
+            setA: statsA,
+            setB: statsB,
+            comparison: {
+                meanDifference: this.round(statsA.mean - statsB.mean, 1),
+                medianDifference: this.round(statsA.median - statsB.median, 1),
+                meanPercentChange: statsB.mean !== 0 ? this.round(((statsA.mean - statsB.mean) / statsB.mean) * 100, 1) : null
+            },
+            tTest: tTest
+        };
+    }
+
+    /**
+     * Show cell content in modal overlay
+     */
+    showCellContent(rowIndex, columnKey, columnIndex) {
+        if (!this.flattenedResults || !this.flattenedResults.rows) {
+            console.error("No flattened results available");
+            return;
+        }
+
+        const row = this.flattenedResults.rows[rowIndex];
+        if (!row) {
+            console.error("Row not found:", rowIndex);
+            return;
+        }
+
+        const value = row[columnKey];
+        const modal = document.getElementById("cell-content-modal");
+        
+        // Set modal title and metadata
+        document.getElementById("cell-content-title").textContent = `Cell Content - ${columnKey}`;
+        document.getElementById("cell-column-name").textContent = `Column: ${columnKey}`;
+        document.getElementById("cell-row-number").textContent = `Row: ${rowIndex + 1}`;
+        
+        // Determine content type and format
+        let contentType, formattedContent, contentClass;
+        
+        if (value === null || value === undefined) {
+            contentType = "null";
+            formattedContent = "(NULL)";
+            contentClass = "empty-content";
+        } else if (typeof value === "object") {
+            contentType = "json";
+            formattedContent = this.safeStringify(value);
+            contentClass = "json-content";
+        } else if (typeof value === "string" && value.trim() === "") {
+            contentType = "empty";
+            formattedContent = "(Empty string)";
+            contentClass = "empty-content";
+        } else {
+            const stringValue = value.toString();
+            
+            // Try to detect if it's JSON
+            if (stringValue.trim().startsWith('{') || stringValue.trim().startsWith('[')) {
+                try {
+                    const parsed = JSON.parse(stringValue);
+                    contentType = "json";
+                    formattedContent = JSON.stringify(parsed, null, 2);
+                    contentClass = "json-content";
+                } catch (e) {
+                    contentType = "text";
+                    formattedContent = stringValue;
+                    contentClass = "text-content";
+                }
+            } else {
+                contentType = "text";
+                formattedContent = stringValue;
+                contentClass = "text-content";
+            }
+        }
+        
+        // Set content metadata
+        document.getElementById("cell-content-type").textContent = `Type: ${contentType}`;
+        document.getElementById("cell-content-length").textContent = `Length: ${formattedContent.length} chars`;
+        
+        // Set content
+        const contentElement = document.getElementById("cell-content-text");
+        contentElement.textContent = formattedContent;
+        contentElement.className = contentClass;
+        
+        // Store content for copying
+        this.currentCellContent = formattedContent;
+        
+        // Show modal
+        modal.classList.remove("hidden");
+    }
+
+    /**
+     * Hide cell content modal
+     */
+    hideCellContentModal() {
+        const modal = document.getElementById("cell-content-modal");
+        modal.classList.add("hidden");
+        this.currentCellContent = null;
+    }
+
+    /**
+     * Copy cell content to clipboard
+     */
+    async copyCellContent() {
+        if (!this.currentCellContent) {
+            this.showNotification("No content to copy", "warning");
+            return;
+        }
+
+        try {
+            await navigator.clipboard.writeText(this.currentCellContent);
+            this.showNotification("Content copied to clipboard", "success");
+        } catch (error) {
+            console.error("Failed to copy content:", error);
+            
+            // Fallback for browsers that don't support clipboard API
+            try {
+                const textArea = document.createElement("textarea");
+                textArea.value = this.currentCellContent;
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                this.showNotification("Content copied to clipboard", "success");
+            } catch (fallbackError) {
+                this.showNotification("Failed to copy content", "error");
+            }
+        }
+    }
+
+    /**
+     * Setup cell click handlers for the table
+     */
+    setupCellClickHandlers() {
+        const cells = document.querySelectorAll("#results-table .cell-content");
+        cells.forEach(cell => {
+            cell.addEventListener("click", (e) => {
+                const rowIndex = parseInt(cell.dataset.row);
+                const columnKey = cell.dataset.column;
+                const columnIndex = parseInt(cell.dataset.columnIndex);
+                this.showCellContent(rowIndex, columnKey, columnIndex);
+            });
+        });
+    }
+
+    /**
+     * Setup column resizing functionality
+     */
+    setupColumnResize() {
+        const table = document.querySelector("#results-table table");
+        if (!table) return;
+
+        const headers = table.querySelectorAll("th.resizable");
+        headers.forEach((header) => {
+            const resizeHandle = header.querySelector(".resize-handle");
+            if (!resizeHandle) return;
+
+            let startX = 0;
+            let startWidth = 0;
+            let isResizing = false;
+
+            const startResize = (e) => {
+                isResizing = true;
+                this.isResizing = true;
+                startX = e.clientX;
+                startWidth = parseInt(window.getComputedStyle(header).width, 10);
+                document.addEventListener("mousemove", doResize);
+                document.addEventListener("mouseup", stopResize);
+                e.preventDefault();
+            };
+
+            const doResize = (e) => {
+                if (!isResizing) return;
+                const diff = e.clientX - startX;
+                const newWidth = Math.max(100, startWidth + diff);
+                header.style.width = newWidth + "px";
+                
+                // Update column width in memory
+                const columnName = header.dataset.column;
+                if (columnName) {
+                    this.columnWidths.set(columnName, newWidth);
+                }
+
+                // Update corresponding table cells
+                const columnIndex = parseInt(header.dataset.index, 10);
+                const rows = table.querySelectorAll("tbody tr");
+                rows.forEach(row => {
+                    const cell = row.cells[columnIndex];
+                    if (cell) {
+                        cell.style.width = newWidth + "px";
+                    }
+                });
+            };
+
+            const stopResize = () => {
+                isResizing = false;
+                this.isResizing = false;
+                document.removeEventListener("mousemove", doResize);
+                document.removeEventListener("mouseup", stopResize);
+            };
+
+            resizeHandle.addEventListener("mousedown", startResize);
+        });
+    }
+
+    /**
+     * Filter results based on search term
+     */
+    filterResults(searchTerm) {
+        if (!this.results || this.results.length === 0) return;
+
+        const resultItems = document.querySelectorAll(".result-item");
+        const term = searchTerm.toLowerCase().trim();
+
+        // Build template name lookup
+        const templateNameById = {};
+        this.templates.forEach(t => { templateNameById[t.id] = t.name; });
+
+        resultItems.forEach((item, index) => {
+            const result = this.results[index];
+            if (!result) return;
+
+            let shouldShow = true;
+
+            if (term) {
+                // Search in template name
+                const templateName = (templateNameById[result.templateId] || "").toLowerCase();
+                
+                // Search in provider
+                const provider = (result.provider || "").toLowerCase();
+                
+                // Search in input
+                const input = JSON.stringify(result.input || {}).toLowerCase();
+                
+                // Search in output
+                const output = (result.output || "").toString().toLowerCase();
+                
+                // Search in error
+                const error = (result.error || "").toLowerCase();
+
+                shouldShow = templateName.includes(term) || 
+                           provider.includes(term) || 
+                           input.includes(term) || 
+                           output.includes(term) || 
+                           error.includes(term);
+            }
+
+            if (shouldShow) {
+                item.classList.remove("hidden");
+            } else {
+                item.classList.add("hidden");
+            }
+        });
+
+        // Update search status
+        const visibleItems = document.querySelectorAll(".result-item:not(.hidden)").length;
+        const totalItems = resultItems.length;
+        
+        if (term && visibleItems < totalItems) {
+            console.log(`Search filtered: showing ${visibleItems} of ${totalItems} results`);
+        }
+    }
 
     /**
      * Update execution UI state
@@ -2060,6 +2594,7 @@ class PromptRunnerApp {
         const nameInput = document.getElementById("template-name");
         nameInput.value = template.name;
         nameInput.dataset.templateId = template.id;
+        nameInput.dataset.originalName = template.name; // Store original name for comparison
         document.getElementById("system-prompt").value = template.systemPrompt || "";
         document.getElementById("user-prompt").value = template.userPrompt;
 
@@ -2112,13 +2647,20 @@ class PromptRunnerApp {
     clearResults () {
 
         this.results = [];
-        document.getElementById("results-list").innerHTML = `
-      <div class="empty-state">
-        <span class="empty-icon">📈</span>
-        <p>No results yet</p>
-        <p>Execute some prompts to see results here</p>
-      </div>
-    `;
+        this.flattenedResults = [];
+        this.columnWidths.clear();
+        
+        // Hide search container and show empty state
+        document.getElementById("results-list-container").classList.add("hidden");
+        document.getElementById("results-list-empty").classList.remove("hidden");
+        
+        // Clear search input
+        document.getElementById("results-search-input").value = "";
+        
+        // Clear other views
+        document.getElementById("results-table").classList.add("hidden");
+        document.getElementById("results-aggregations").classList.add("hidden");
+        
         this.updateStatus("Results cleared");
 
     }
@@ -2146,20 +2688,58 @@ class PromptRunnerApp {
     }
 
     /**
+     * Check if a column contains long text strings that should not be compared categorically
+     */
+    isLongTextColumn(values) {
+        if (!Array.isArray(values) || values.length === 0) return false;
+        
+        const stringValues = values.filter(val => typeof val === 'string' && val !== null && val !== undefined);
+        if (stringValues.length === 0) return false;
+        
+        // Calculate average length of string values
+        const totalLength = stringValues.reduce((sum, str) => sum + str.length, 0);
+        const averageLength = totalLength / stringValues.length;
+        
+        // More conservative detection - need both conditions to be true for long text
+        // 1. Average length > 150 characters (raised from 100)
+        // 2. AND either: most texts are long OR we have very long outliers
+        const hasVeryLongText = stringValues.some(str => str.length > 500); // raised from 300
+        const mostTextsAreLong = stringValues.filter(str => str.length > 100).length >= (stringValues.length * 0.7);
+        
+        const isLongText = averageLength > 150 && (hasVeryLongText || mostTextsAreLong);
+        
+        console.log(`Long text detection for column: avgLen=${averageLength.toFixed(1)}, hasVeryLong=${hasVeryLongText}, mostLong=${mostTextsAreLong}, result=${isLongText}`);
+        
+        return isLongText;
+    }
+
+    /**
      * Check if a column contains numerical values
      */
     isNumericalColumn(values) {
         if (!Array.isArray(values) || values.length === 0) return false;
         
-        // Check if at least 80% of values are numbers
+        // Check if at least 80% of values are numbers AND have meaningful numerical relationships
         const numericCount = values.filter(val => {
             if (val === null || val === undefined) return false;
-            if (typeof val === 'number') return true;
+            if (typeof val === 'number') {
+                // If it's an integer with small values (like 1-5 rating scale), might be categorical
+                if (Number.isInteger(val) && val >= 1 && val <= 10) {
+                    return false; // Treat small integer ranges as categorical
+                }
+                return true;
+            }
             if (typeof val === 'string') {
                 const trimmed = val.trim();
                 if (trimmed === '') return false;
                 const parsed = parseFloat(trimmed);
-                return !isNaN(parsed) && isFinite(parsed);
+                if (!isNaN(parsed) && isFinite(parsed)) {
+                    // Same check for string numbers
+                    if (Number.isInteger(parsed) && parsed >= 1 && parsed <= 10) {
+                        return false; // Treat small integer ranges as categorical
+                    }
+                    return true;
+                }
             }
             return false;
         }).length;
@@ -2280,11 +2860,15 @@ class PromptRunnerApp {
         console.log("performComparison called with:", resultsA.length, "and", resultsB.length, "results");
         
         // Flatten both result sets
+        console.log("Sample results A:", resultsA.slice(0, 2));
         const flattenedA = this.flattenResults(resultsA);
-        const flattenedB = this.flattenResults(resultsB);
+        console.log("Flattened A keys:", flattenedA.keys);
+        console.log("Sample flattened A rows:", flattenedA.rows.slice(0, 2));
         
-        console.log("Flattened A columns:", Object.keys(flattenedA.columns || {}));
-        console.log("Flattened B columns:", Object.keys(flattenedB.columns || {}));
+        console.log("Sample results B:", resultsB.slice(0, 2));
+        const flattenedB = this.flattenResults(resultsB);
+        console.log("Flattened B keys:", flattenedB.keys);
+        console.log("Sample flattened B rows:", flattenedB.rows.slice(0, 2));
         
         const comparison = {
             overview: {
@@ -2293,24 +2877,36 @@ class PromptRunnerApp {
             },
             numerical: {},
             categorical: {},
+            textLength: {},
             significance: {}
         };
         
         // Get all unique columns - handle null/undefined cases
-        const columnsA = flattenedA.columns ? Object.keys(flattenedA.columns) : [];
-        const columnsB = flattenedB.columns ? Object.keys(flattenedB.columns) : [];
+        const columnsA = flattenedA.keys || [];
+        const columnsB = flattenedB.keys || [];
         const allColumns = new Set([...columnsA, ...columnsB]);
         
+        console.log("Columns A:", columnsA);
+        console.log("Columns B:", columnsB);
+        
         console.log("All columns to process:", Array.from(allColumns));
+        console.log("Will analyze", Array.from(allColumns).filter(col => !col.startsWith('_')).length, "non-internal columns");
         
         allColumns.forEach(column => {
-            if (column.startsWith('_')) return; // Skip internal columns
+            if (column.startsWith('_')) {
+                console.log(`Skipping internal column: ${column}`);
+                return; // Skip internal columns
+            }
             
             // Safely get values with null/undefined handling
             const valuesA = (flattenedA.rows || []).map(row => row && row[column]).filter(v => v !== null && v !== undefined);
             const valuesB = (flattenedB.rows || []).map(row => row && row[column]).filter(v => v !== null && v !== undefined);
             
             console.log(`Processing column ${column}: A has ${valuesA.length} values, B has ${valuesB.length} values`);
+            console.log(`Sample values A:`, valuesA.slice(0, 5));
+            console.log(`Sample values B:`, valuesB.slice(0, 5));
+            console.log(`Value types A:`, valuesA.slice(0, 5).map(v => typeof v));
+            console.log(`Value types B:`, valuesB.slice(0, 5).map(v => typeof v));
             
             // Skip if no data in either set
             if (valuesA.length === 0 && valuesB.length === 0) {
@@ -2318,28 +2914,76 @@ class PromptRunnerApp {
                 return;
             }
             
-            // Check if column is numerical
-            const isNumerical = this.isNumericalColumn(valuesA) && this.isNumericalColumn(valuesB);
+            // Check column type
+            const isNumericalA = this.isNumericalColumn(valuesA);
+            const isNumericalB = this.isNumericalColumn(valuesB);
+            const isNumerical = isNumericalA && isNumericalB;
             
+            const isLongTextA = this.isLongTextColumn(valuesA);
+            const isLongTextB = this.isLongTextColumn(valuesB);
+            const isLongText = isLongTextA || isLongTextB;
+            
+            // Check if column has any text content (for text length analysis)
+            const hasTextA = valuesA.some(val => typeof val === 'string' && val !== null && val !== undefined);
+            const hasTextB = valuesB.some(val => typeof val === 'string' && val !== null && val !== undefined);
+            const hasText = hasTextA || hasTextB;
+            
+            console.log(`Column ${column} type check: numerical=(A=${isNumericalA}, B=${isNumericalB}, both=${isNumerical}), longText=(A=${isLongTextA}, B=${isLongTextB}, either=${isLongText}), hasText=${hasText}`);
+            
+            // Perform appropriate analysis - multiple analyses can be done for the same column
             if (isNumerical && valuesA.length > 0 && valuesB.length > 0) {
-                console.log(`Column ${column} is numerical`);
+                console.log(`Column ${column} is numerical - performing numerical comparison`);
                 try {
                     comparison.numerical[column] = this.compareNumericalValues(valuesA, valuesB);
                 } catch (error) {
                     console.error(`Error comparing numerical values for column ${column}:`, error);
+                    console.log(`Falling back to categorical comparison for column ${column}`);
                     comparison.categorical[column] = this.compareCategoricalValues(valuesA, valuesB);
                 }
-            } else if (valuesA.length > 0 || valuesB.length > 0) {
-                console.log(`Column ${column} is categorical`);
-                try {
-                    comparison.categorical[column] = this.compareCategoricalValues(valuesA, valuesB);
-                } catch (error) {
-                    console.error(`Error comparing categorical values for column ${column}:`, error);
+            } else {
+                // For non-numerical columns, determine the best analysis approach
+                
+                // Always do text length analysis if there's text content in either set
+                if (hasText && (valuesA.length > 0 || valuesB.length > 0)) {
+                    console.log(`Column ${column} contains text - performing text length analysis`);
+                    try {
+                        const textAnalysis = this.analyzeTextLengths(valuesA, valuesB);
+                        if (textAnalysis) {
+                            comparison.textLength[column] = textAnalysis;
+                            console.log(`Text length analysis result for ${column}:`, textAnalysis);
+                        } else {
+                            console.log(`Text length analysis returned null for ${column}`);
+                        }
+                    } catch (error) {
+                        console.error(`Error analyzing text lengths for column ${column}:`, error);
+                    }
                 }
+                
+                // Do categorical analysis for non-long-text columns OR as fallback
+                if (!isLongText && (valuesA.length > 0 || valuesB.length > 0)) {
+                    console.log(`Column ${column} is categorical - performing categorical comparison`);
+                    try {
+                        comparison.categorical[column] = this.compareCategoricalValues(valuesA, valuesB);
+                        console.log(`Categorical comparison result for ${column}:`, comparison.categorical[column]);
+                    } catch (error) {
+                        console.error(`Error comparing categorical values for column ${column}:`, error);
+                    }
+                } else if (isLongText) {
+                    console.log(`Column ${column} is long text - skipping categorical analysis to avoid noise`);
+                }
+            }
+            
+            if (valuesA.length === 0 && valuesB.length === 0) {
+                console.log(`Column ${column} skipped - no valid data in either set`);
             }
         });
         
         console.log("Comparison result:", comparison);
+        console.log("Analysis summary:");
+        console.log(`- Numerical columns: ${Object.keys(comparison.numerical).length}`, Object.keys(comparison.numerical));
+        console.log(`- Categorical columns: ${Object.keys(comparison.categorical).length}`, Object.keys(comparison.categorical));
+        console.log(`- Text length columns: ${Object.keys(comparison.textLength).length}`, Object.keys(comparison.textLength));
+        
         return comparison;
     }
 
@@ -2379,26 +3023,64 @@ class PromptRunnerApp {
         const allValues = new Set([...Object.keys(freqA), ...Object.keys(freqB)]);
         
         const comparison = {};
+        let totalDivergence = 0;
+        
         allValues.forEach(value => {
             const countA = freqA[value] || 0;
             const countB = freqB[value] || 0;
             const totalA = valuesA.length;
             const totalB = valuesB.length;
             
+            const percentageA = totalA > 0 ? (countA / totalA) * 100 : 0;
+            const percentageB = totalB > 0 ? (countB / totalB) * 100 : 0;
+            const percentageDifference = percentageB - percentageA;
+            
+            // Calculate relative importance (how much this value contributes to overall difference)
+            const relativeImportance = Math.abs(percentageDifference);
+            totalDivergence += relativeImportance;
+            
             comparison[value] = {
-                setA: { count: countA, percentage: totalA > 0 ? (countA / totalA) * 100 : 0 },
-                setB: { count: countB, percentage: totalB > 0 ? (countB / totalB) * 100 : 0 },
+                setA: { count: countA, percentage: percentageA },
+                setB: { count: countB, percentage: percentageB },
                 difference: countB - countA,
-                percentageDifference: totalA > 0 ? ((countB / totalB) - (countA / totalA)) * 100 : 0
+                percentageDifference: percentageDifference,
+                relativeImportance: relativeImportance
             };
         });
+        
+        // Normalize relative importance to percentages
+        Object.values(comparison).forEach(comp => {
+            comp.relativeImportance = totalDivergence > 0 ? (comp.relativeImportance / totalDivergence) * 100 : 0;
+        });
+        
+        // Calculate additional metrics
+        const uniqueToA = Array.from(allValues).filter(value => (freqA[value] || 0) > 0 && (freqB[value] || 0) === 0);
+        const uniqueToB = Array.from(allValues).filter(value => (freqA[value] || 0) === 0 && (freqB[value] || 0) > 0);
+        const sharedValues = Array.from(allValues).filter(value => (freqA[value] || 0) > 0 && (freqB[value] || 0) > 0);
+        
+        // Calculate diversity metrics (Gini-Simpson diversity index)
+        const diversityA = this.calculateDiversityIndex(Object.values(freqA), valuesA.length);
+        const diversityB = this.calculateDiversityIndex(Object.values(freqB), valuesB.length);
+        
+        // Calculate overlap coefficient (Jaccard similarity for counts)
+        const jaccardSimilarity = this.calculateJaccardSimilarity(freqA, freqB);
         
         // Perform chi-square test for significance
         const chiSquareTest = this.performChiSquareTest(freqA, freqB, valuesA.length, valuesB.length);
         
         return {
             distributions: comparison,
-            chiSquareTest
+            chiSquareTest,
+            summary: {
+                totalUniqueValues: allValues.size,
+                uniqueToA: uniqueToA.length,
+                uniqueToB: uniqueToB.length,
+                sharedValues: sharedValues.length,
+                diversityA: diversityA,
+                diversityB: diversityB,
+                jaccardSimilarity: jaccardSimilarity,
+                totalDivergence: totalDivergence
+            }
         };
     }
 
@@ -2585,10 +3267,17 @@ class PromptRunnerApp {
         this.displayComparisonOverview(comparison.overview);
         
         // Display numerical comparisons
+        console.log("Displaying numerical comparisons:", Object.keys(comparison.numerical));
         this.displayNumericalComparisons(comparison.numerical);
         
-        // Display categorical comparisons
+        console.log("Displaying categorical comparisons:", Object.keys(comparison.categorical));
         this.displayCategoricalComparisons(comparison.categorical);
+        
+        console.log("Displaying text length comparisons:", Object.keys(comparison.textLength || {}));
+        if (comparison.textLength && Object.keys(comparison.textLength).length > 0) {
+            console.log("Text length data:", comparison.textLength);
+        }
+        this.displayTextLengthComparisons(comparison.textLength || {});
         
         // Display significance tests
         this.displaySignificanceTests(comparison);
@@ -2663,37 +3352,119 @@ class PromptRunnerApp {
     displayCategoricalComparisons(categoricalComparisons) {
         const container = document.getElementById("distribution-comparisons");
         
-        if (Object.keys(categoricalComparisons).length === 0) {
+        console.log("displayCategoricalComparisons called with:", categoricalComparisons);
+        
+        if (!categoricalComparisons || Object.keys(categoricalComparisons).length === 0) {
+            console.log("No categorical comparisons to display");
             container.innerHTML = "<p>No categorical columns found for comparison.</p>";
             return;
         }
         
+        console.log("Found categorical comparisons for columns:", Object.keys(categoricalComparisons));
+        
         let html = '';
         
         Object.entries(categoricalComparisons).forEach(([column, comparison]) => {
-            const { distributions, chiSquareTest } = comparison;
+            const { distributions, chiSquareTest, summary } = comparison;
+            
+            // Use summary statistics from the comparison
+            const totalValues = summary?.totalUniqueValues || Object.keys(distributions).length;
+            const uniqueToA = summary?.uniqueToA || Object.entries(distributions).filter(([_, data]) => data.setA.count > 0 && data.setB.count === 0).length;
+            const uniqueToB = summary?.uniqueToB || Object.entries(distributions).filter(([_, data]) => data.setA.count === 0 && data.setB.count > 0).length;
+            const sharedValues = summary?.sharedValues || Object.entries(distributions).filter(([_, data]) => data.setA.count > 0 && data.setB.count > 0).length;
+            
+            // Find most significant differences
+            const sortedByDifference = Object.entries(distributions)
+                .map(([value, data]) => ({
+                    value,
+                    data,
+                    absoluteDifference: Math.abs(data.percentageDifference)
+                }))
+                .sort((a, b) => b.absoluteDifference - a.absoluteDifference)
+                .slice(0, 5); // Top 5 differences
             
             html += `
-                <div class="comparison-section">
-                    <h5>${this.escapeHtml(column)}</h5>
-                    <div class="distribution-comparison">
-                        <div class="distribution-chart">
-                            <h5>Set A Distribution</h5>
+                <div class="comparison-section" style="margin-bottom: 32px; border: 1px solid var(--border-color); border-radius: 8px; padding: 16px;">
+                    <h5 style="margin-bottom: 16px; color: var(--text-primary);">${this.escapeHtml(column)}</h5>
+                    
+                    <!-- Summary Statistics -->
+                    <div class="categorical-summary" style="background: var(--bg-tertiary); padding: 12px; border-radius: 6px; margin-bottom: 16px;">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; font-size: 12px;">
+                            <div><strong>Total Values:</strong> ${totalValues}</div>
+                            <div><strong>Shared Values:</strong> ${sharedValues}</div>
+                            <div><strong>Only in Set A:</strong> ${uniqueToA}</div>
+                            <div><strong>Only in Set B:</strong> ${uniqueToB}</div>
+                            ${summary ? `
+                                <div><strong>Jaccard Similarity:</strong> ${this.round(summary.jaccardSimilarity, 2)}</div>
+                                <div><strong>Diversity A:</strong> ${this.round(summary.diversityA, 2)}</div>
+                                <div><strong>Diversity B:</strong> ${this.round(summary.diversityB, 2)}</div>
+                                <div><strong>Total Divergence:</strong> ${this.round(summary.totalDivergence, 1)}%</div>
+                            ` : ''}
+                        </div>
+                        ${summary ? `
+                            <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border-light); font-size: 11px; color: var(--text-muted);">
+                                <strong>Interpretation:</strong> 
+                                Jaccard similarity of ${this.round(summary.jaccardSimilarity, 2)} indicates ${summary.jaccardSimilarity > 0.7 ? 'high' : summary.jaccardSimilarity > 0.3 ? 'moderate' : 'low'} overlap between sets.
+                                Diversity indices show how evenly distributed values are (higher = more diverse).
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    <!-- Side-by-side Distribution Charts -->
+                    <div class="distribution-comparison" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                        <div class="distribution-chart" style="border: 1px solid var(--border-light); border-radius: 6px; padding: 12px;">
+                            <h6 style="margin-bottom: 8px; color: var(--text-secondary);">Set A Distribution</h6>
                             ${this.renderDistributionChart(distributions, 'setA')}
                         </div>
-                        <div class="distribution-chart">
-                            <h5>Set B Distribution</h5>
+                        <div class="distribution-chart" style="border: 1px solid var(--border-light); border-radius: 6px; padding: 12px;">
+                            <h6 style="margin-bottom: 8px; color: var(--text-secondary);">Set B Distribution</h6>
                             ${this.renderDistributionChart(distributions, 'setB')}
                         </div>
                     </div>
-                    <div style="margin-top: 12px;">
-                        <strong>Chi-Square Test:</strong> 
-                        <span class="significance-indicator ${chiSquareTest.significant ? 'significant' : 'not-significant'}">
-                            ${chiSquareTest.significant ? 'Significant difference (p<0.05)' : 'No significant difference (p≥0.05)'}
-                        </span>
-                        <span style="margin-left: 8px; font-size: 12px; color: var(--text-muted);">
-                            χ²=${chiSquareTest.chiSquareValue}, p=${chiSquareTest.pValue}
-                        </span>
+                    
+                    <!-- Detailed Comparison Table -->
+                    <div class="categorical-table" style="margin-bottom: 16px;">
+                        <h6 style="margin-bottom: 8px; color: var(--text-secondary);">Top Differences</h6>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                            <thead>
+                                <tr style="background: var(--bg-tertiary);">
+                                    <th style="padding: 8px; text-align: left; border: 1px solid var(--border-light);">Value</th>
+                                    <th style="padding: 8px; text-align: right; border: 1px solid var(--border-light);">Set A</th>
+                                    <th style="padding: 8px; text-align: right; border: 1px solid var(--border-light);">Set B</th>
+                                    <th style="padding: 8px; text-align: right; border: 1px solid var(--border-light);">Difference</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${sortedByDifference.map(({ value, data }) => {
+                                    const diffColor = data.percentageDifference > 0 ? 'var(--accent-success)' : 'var(--accent-danger)';
+                                    const diffIcon = data.percentageDifference > 0 ? '↗' : '↘';
+                                    return `
+                                        <tr>
+                                            <td style="padding: 6px 8px; border: 1px solid var(--border-light); max-width: 150px; overflow: hidden; text-overflow: ellipsis;">${this.escapeHtml(value)}</td>
+                                            <td style="padding: 6px 8px; border: 1px solid var(--border-light); text-align: right;">${data.setA.count} (${this.round(data.setA.percentage)}%)</td>
+                                            <td style="padding: 6px 8px; border: 1px solid var(--border-light); text-align: right;">${data.setB.count} (${this.round(data.setB.percentage)}%)</td>
+                                            <td style="padding: 6px 8px; border: 1px solid var(--border-light); text-align: right; color: ${diffColor};">
+                                                ${diffIcon} ${this.round(Math.abs(data.percentageDifference))}%
+                                            </td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Statistical Significance -->
+                    <div class="significance-result" style="padding: 12px; border-radius: 6px; background: ${chiSquareTest.significant ? 'rgba(244, 67, 54, 0.05)' : 'rgba(76, 175, 80, 0.05)'}; border-left: 4px solid ${chiSquareTest.significant ? 'var(--accent-danger)' : 'var(--accent-success)'};">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                            <strong>Chi-Square Test Result:</strong>
+                            <span class="significance-indicator ${chiSquareTest.significant ? 'significant' : 'not-significant'}" style="padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; color: white; background: ${chiSquareTest.significant ? 'var(--accent-danger)' : 'var(--accent-success)'};">
+                                ${chiSquareTest.significant ? 'SIGNIFICANT' : 'NOT SIGNIFICANT'}
+                            </span>
+                        </div>
+                        <div style="font-size: 12px; color: var(--text-muted);">
+                            χ² = ${chiSquareTest.chiSquareValue}, p = ${chiSquareTest.pValue} 
+                            ${chiSquareTest.significant ? '(p < 0.05: distributions are significantly different)' : '(p ≥ 0.05: no significant difference)'}
+                        </div>
                     </div>
                 </div>
             `;
@@ -2708,21 +3479,181 @@ class PromptRunnerApp {
     renderDistributionChart(distributions, setKey) {
         const entries = Object.entries(distributions).sort((a, b) => b[1][setKey].count - a[1][setKey].count);
         const maxCount = entries.length > 0 ? entries[0][1][setKey].count : 1;
+        const totalCount = entries.reduce((sum, [_, data]) => sum + data[setKey].count, 0);
         
-        return entries.map(([value, data]) => {
-            const count = data[setKey].count;
-            const percentage = data[setKey].percentage;
-            const barWidth = maxCount > 0 ? Math.max(2, Math.round(100 * count / maxCount)) : 2;
-            
-            return `
-                <div class="histogram-bar" style="width: ${barWidth}%;">
-                    <span class="bar-label">${this.escapeHtml(value)}</span>
+        if (entries.length === 0) {
+            return '<div style="color: var(--text-muted); font-style: italic; text-align: center; padding: 16px;">No data</div>';
+        }
+        
+        // Limit to top 10 entries for better readability
+        const topEntries = entries.slice(0, 10);
+        const remainingCount = entries.length - topEntries.length;
+        
+        return `
+            <div style="max-height: 300px; overflow-y: auto;">
+                ${topEntries.map(([value, data]) => {
+                    const count = data[setKey].count;
+                    const percentage = data[setKey].percentage;
+                    const barWidth = maxCount > 0 ? Math.max(2, Math.round(80 * count / maxCount)) : 2;
+                    
+                    return `
+                        <div style="display: flex; align-items: center; margin-bottom: 6px; font-size: 11px;">
+                            <div style="min-width: 80px; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 8px;" title="${this.escapeHtml(value)}">
+                                ${this.escapeHtml(value)}
+                            </div>
+                            <div style="flex: 1; background: var(--bg-muted); height: 14px; border-radius: 7px; overflow: hidden; margin-right: 8px;">
+                                <div style="width: ${barWidth}%; height: 100%; background: linear-gradient(90deg, var(--accent-primary), var(--accent-primary-light)); border-radius: 7px;"></div>
+                            </div>
+                            <div style="min-width: 60px; text-align: right; color: var(--text-secondary);">
+                                ${count} (${this.round(percentage)}%)
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+                ${remainingCount > 0 ? `
+                    <div style="text-align: center; margin-top: 8px; font-size: 10px; color: var(--text-muted); font-style: italic;">
+                        ... and ${remainingCount} more values
+                    </div>
+                ` : ''}
+                <div style="border-top: 1px solid var(--border-light); margin-top: 8px; padding-top: 6px; font-size: 10px; color: var(--text-muted); text-align: center;">
+                    Total: ${totalCount} items
                 </div>
-                <div style="font-size: 12px; margin-bottom: 8px;">
-                    ${count} (${this.round(percentage)}%)
+            </div>
+        `;
+    }
+
+    /**
+     * Display text length comparisons
+     */
+    displayTextLengthComparisons(textLengthComparisons) {
+        // Clear any existing text length analysis first
+        const existingSection = document.querySelector('.comparison-details .text-length-section');
+        if (existingSection) {
+            existingSection.remove();
+        }
+        
+        if (!textLengthComparisons || Object.keys(textLengthComparisons).length === 0) {
+            return; // No text length comparisons to display
+        }
+
+        console.log("Found text length comparisons for columns:", Object.keys(textLengthComparisons));
+
+        let html = '<div class="comparison-section text-length-section"><h4>📝 Text Length Analysis</h4>';
+        html += '<div class="text-length-grid">';
+
+        Object.entries(textLengthComparisons).forEach(([column, analysis]) => {
+            if (!analysis) return;
+
+            const { setA, setB, comparison: comp, tTest } = analysis;
+
+            html += `
+                <div class="text-length-comparison">
+                    <h5>${this.escapeHtml(column)}</h5>
+                    
+                    <!-- Summary Statistics -->
+                    <div class="text-stats-summary">
+                        <div class="stats-overview">
+                            <div class="stat-group">
+                                <h6>Set A (${setA.count} texts)</h6>
+                                <div class="stat-row">
+                                    <span>Average Length:</span>
+                                    <span class="stat-value">${setA.mean} chars</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span>Median Length:</span>
+                                    <span class="stat-value">${setA.median} chars</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span>Range:</span>
+                                    <span class="stat-value">${setA.min} - ${setA.max} chars</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span>Std Dev:</span>
+                                    <span class="stat-value">${setA.stdDev} chars</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span>Total:</span>
+                                    <span class="stat-value">${setA.totalChars.toLocaleString()} chars</span>
+                                </div>
+                            </div>
+                            
+                            <div class="stat-group">
+                                <h6>Set B (${setB.count} texts)</h6>
+                                <div class="stat-row">
+                                    <span>Average Length:</span>
+                                    <span class="stat-value">${setB.mean} chars</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span>Median Length:</span>
+                                    <span class="stat-value">${setB.median} chars</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span>Range:</span>
+                                    <span class="stat-value">${setB.min} - ${setB.max} chars</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span>Std Dev:</span>
+                                    <span class="stat-value">${setB.stdDev} chars</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span>Total:</span>
+                                    <span class="stat-value">${setB.totalChars.toLocaleString()} chars</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Comparison -->
+                        <div class="comparison-summary">
+                            <h6>Comparison</h6>
+                            <div class="stat-row">
+                                <span>Mean Difference:</span>
+                                <span class="stat-value ${comp.meanDifference > 0 ? 'positive' : comp.meanDifference < 0 ? 'negative' : 'neutral'}">${comp.meanDifference > 0 ? '+' : ''}${comp.meanDifference} chars</span>
+                            </div>
+                            <div class="stat-row">
+                                <span>Median Difference:</span>
+                                <span class="stat-value ${comp.medianDifference > 0 ? 'positive' : comp.medianDifference < 0 ? 'negative' : 'neutral'}">${comp.medianDifference > 0 ? '+' : ''}${comp.medianDifference} chars</span>
+                            </div>
+                            ${comp.meanPercentChange !== null ? `
+                                <div class="stat-row">
+                                    <span>Percent Change:</span>
+                                    <span class="stat-value ${comp.meanPercentChange > 0 ? 'positive' : comp.meanPercentChange < 0 ? 'negative' : 'neutral'}">${comp.meanPercentChange > 0 ? '+' : ''}${comp.meanPercentChange}%</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                    
+                    <!-- Statistical Test -->
+                    ${tTest ? `
+                        <div class="statistical-test">
+                            <h6>Statistical Significance</h6>
+                            <div class="test-result">
+                                <span class="test-name">T-Test:</span>
+                                <span class="p-value ${tTest.pValue < 0.05 ? 'significant' : 'not-significant'}">
+                                    p = ${tTest.pValue.toFixed(4)} ${tTest.pValue < 0.05 ? '(significant)' : '(not significant)'}
+                                </span>
+                            </div>
+                            <div class="test-interpretation">
+                                ${tTest.pValue < 0.05 
+                                    ? '<span class="interpretation significant">The difference in text lengths is statistically significant.</span>'
+                                    : '<span class="interpretation not-significant">No significant difference in text lengths detected.</span>'
+                                }
+                            </div>
+                        </div>
+                    ` : ''}
                 </div>
             `;
-        }).join('');
+        });
+
+        html += '</div></div>';
+
+        // Find the comparison details container and add text length section
+        const detailsContainer = document.querySelector('.comparison-details');
+        
+        if (detailsContainer) {
+            detailsContainer.insertAdjacentHTML('beforeend', html);
+        } else {
+            console.error('Could not find comparison details container for text length analysis');
+        }
     }
 
     /**
