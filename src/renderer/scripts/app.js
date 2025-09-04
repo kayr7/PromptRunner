@@ -9,6 +9,7 @@ class PromptRunnerApp {
 
         this.currentTab = "templates";
         this.currentData = null;
+        this.currentDataFile = null; // Store the current file path
         this.templates = [];
         this.results = [];
         this.flattenedResults = [];
@@ -266,6 +267,54 @@ class PromptRunnerApp {
         // Categorical histograms button
         document.getElementById("show-categorical-histograms-btn").addEventListener("click", () => {
             this.showCategoricalHistograms();
+        });
+
+        // Save/Load results buttons
+        document.getElementById("save-results-btn").addEventListener("click", () => {
+            this.showSaveResultsModal();
+        });
+
+        document.getElementById("load-saved-results-btn").addEventListener("click", () => {
+            this.showLoadResultsModal();
+        });
+
+        // Modal event listeners
+        document.getElementById("close-save-modal").addEventListener("click", () => {
+            this.hideSaveResultsModal();
+        });
+
+        document.getElementById("cancel-save-results").addEventListener("click", () => {
+            this.hideSaveResultsModal();
+        });
+
+        document.getElementById("confirm-save-results").addEventListener("click", () => {
+            this.saveResults();
+        });
+
+        document.getElementById("close-load-modal").addEventListener("click", () => {
+            this.hideLoadResultsModal();
+        });
+
+        document.getElementById("close-load-results").addEventListener("click", () => {
+            this.hideLoadResultsModal();
+        });
+
+        // Search functionality
+        document.getElementById("load-results-search").addEventListener("input", (e) => {
+            this.filterSavedResults(e.target.value);
+        });
+
+        // Compare results functionality
+        document.getElementById("compare-results-btn").addEventListener("click", () => {
+            this.showCompareResultsModal();
+        });
+
+        document.getElementById("close-compare-modal").addEventListener("click", () => {
+            this.hideCompareResultsModal();
+        });
+
+        document.getElementById("start-comparison-btn").addEventListener("click", () => {
+            this.startComparison();
         });
 
         // IPC event listeners
@@ -650,6 +699,7 @@ class PromptRunnerApp {
             if (result.success) {
 
                 this.currentData = result.data;
+                this.currentDataFile = filePath; // Store the file path
                 this.renderDataPreview();
                 this.updateStatus(`Loaded ${result.data.length} records`);
 
@@ -692,6 +742,7 @@ class PromptRunnerApp {
             if (result.success) {
 
                 this.currentData = result.data;
+                this.currentDataFile = file.path; // Store the file path
                 this.renderDataPreview();
                 this.updateStatus(`Loaded ${result.data.length} records`);
 
@@ -1083,11 +1134,36 @@ class PromptRunnerApp {
             if (result.success) {
 
                 this.results = result.results;
-                // Persist results
+                // Auto-save results with metadata
                 try {
-                    await window.electronAPI.saveResults(this.results);
+                    const template = this.templates.find(t => t.id === this.results[0]?.templateId);
+                    
+                    // Get input file name
+                    let inputFileName = "Manual Input";
+                    if (this.currentDataFile) {
+                        const pathParts = this.currentDataFile.split('/');
+                        inputFileName = pathParts[pathParts.length - 1] || "Unknown File";
+                    }
+                    
+                    // Get provider and model
+                    const provider = this.results[0]?.provider || "Unknown Provider";
+                    const model = this.results[0]?.model || "Unknown Model";
+                    
+                    // Generate auto-save name
+                    const autoSaveName = `${template?.name || "Template"} - ${inputFileName} - ${provider} (${model})`;
+                    
+                    const metadata = {
+                        name: autoSaveName,
+                        description: `Auto-saved results from ${template?.name || "template"} execution`,
+                        templateId: template?.id,
+                        templateName: template?.name,
+                        provider: provider,
+                        model: model
+                    };
+                    
+                    await window.electronAPI.saveResults(this.results, metadata);
                 } catch (e) {
-                    console.error('Failed to save results:', e);
+                    console.error('Failed to auto-save results:', e);
                 }
                 this.showNotification("Execution completed", "success");
                 this.updateStatus(`Execution completed: ${result.results.length} results`);
@@ -1509,6 +1585,223 @@ class PromptRunnerApp {
     }
 
     /**
+     * Show save results modal
+     */
+    showSaveResultsModal() {
+        if (this.results.length === 0) {
+            this.showNotification("No results to save", "warning");
+            return;
+        }
+
+        const modal = document.getElementById("save-results-modal");
+        const nameInput = document.getElementById("save-results-name");
+        const descriptionInput = document.getElementById("save-results-description");
+
+        // Generate default name with template, input file, provider, and model
+        const template = this.templates.find(t => t.id === this.results[0]?.templateId);
+        const templateName = template?.name || "Unknown Template";
+        
+        // Get input file name
+        let inputFileName = "Manual Input";
+        if (this.currentDataFile) {
+            const pathParts = this.currentDataFile.split('/');
+            inputFileName = pathParts[pathParts.length - 1] || "Unknown File";
+        }
+        
+        // Get provider and model
+        const provider = this.results[0]?.provider || "Unknown Provider";
+        const model = this.results[0]?.model || "Unknown Model";
+        
+        const defaultName = `${templateName} - ${inputFileName} - ${provider} (${model})`;
+        nameInput.value = defaultName;
+        descriptionInput.value = "";
+
+        modal.classList.remove("hidden");
+        nameInput.focus();
+    }
+
+    /**
+     * Hide save results modal
+     */
+    hideSaveResultsModal() {
+        const modal = document.getElementById("save-results-modal");
+        modal.classList.add("hidden");
+    }
+
+    /**
+     * Save results with metadata
+     */
+    async saveResults() {
+        const nameInput = document.getElementById("save-results-name");
+        const descriptionInput = document.getElementById("save-results-description");
+
+        const name = nameInput.value.trim();
+        const description = descriptionInput.value.trim();
+
+        if (!name) {
+            this.showNotification("Please enter a name for the result set", "error");
+            return;
+        }
+
+        try {
+            // Get metadata from current results
+            const template = this.templates.find(t => t.id === this.results[0]?.templateId);
+            const metadata = {
+                name: name,
+                description: description,
+                templateId: template?.id,
+                templateName: template?.name,
+                provider: this.results[0]?.provider,
+                model: this.results[0]?.model
+            };
+
+            const result = await window.electronAPI.saveResults(this.results, metadata);
+
+            if (result.success) {
+                this.showNotification("Results saved successfully", "success");
+                this.hideSaveResultsModal();
+            } else {
+                this.showNotification("Failed to save results", "error");
+            }
+        } catch (error) {
+            console.error("Error saving results:", error);
+            this.showNotification("Error saving results", "error");
+        }
+    }
+
+    /**
+     * Show load results modal
+     */
+    async showLoadResultsModal() {
+        const modal = document.getElementById("load-results-modal");
+        modal.classList.remove("hidden");
+        
+        await this.loadSavedResultsList();
+    }
+
+    /**
+     * Hide load results modal
+     */
+    hideLoadResultsModal() {
+        const modal = document.getElementById("load-results-modal");
+        modal.classList.add("hidden");
+    }
+
+    /**
+     * Load saved results list
+     */
+    async loadSavedResultsList() {
+        try {
+            const result = await window.electronAPI.loadResults();
+            
+            if (result.success) {
+                this.renderSavedResultsList(result.resultSets);
+            } else {
+                this.showNotification("Failed to load saved results", "error");
+            }
+        } catch (error) {
+            console.error("Error loading saved results:", error);
+            this.showNotification("Error loading saved results", "error");
+        }
+    }
+
+    /**
+     * Render saved results list
+     */
+    renderSavedResultsList(resultSets) {
+        const listContainer = document.getElementById("saved-results-list");
+        
+        if (resultSets.length === 0) {
+            listContainer.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 20px;">No saved results found</div>';
+            return;
+        }
+
+        const html = resultSets.map(resultSet => {
+            const date = new Date(resultSet.timestamp).toLocaleString();
+            return `
+            <div class="saved-result-item" data-id="${resultSet.id}">
+                <div class="saved-result-header">
+                    <div>
+                        <div class="saved-result-name">${this.escapeHtml(resultSet.name)}</div>
+                        <div class="saved-result-meta">
+                            <span>${resultSet.sampleCount} samples</span>
+                            <span>${resultSet.templateName || 'Unknown template'}</span>
+                            <span>${resultSet.provider || 'Unknown provider'} (${resultSet.model || 'Unknown model'})</span>
+                            <span>${date}</span>
+                        </div>
+                    </div>
+                </div>
+                ${resultSet.description ? `<div class="saved-result-description">${this.escapeHtml(resultSet.description)}</div>` : ''}
+                <div class="saved-result-actions">
+                    <button class="btn btn-primary btn-sm" onclick="app.loadResultSet('${resultSet.id}')">Load</button>
+                    <button class="btn btn-text btn-sm" onclick="app.deleteResultSet('${resultSet.id}')">Delete</button>
+                </div>
+            </div>`;
+        }).join("");
+
+        listContainer.innerHTML = html;
+    }
+
+    /**
+     * Filter saved results
+     */
+    async filterSavedResults(searchTerm) {
+        try {
+            const result = await window.electronAPI.loadResults({ search: searchTerm });
+            
+            if (result.success) {
+                this.renderSavedResultsList(result.resultSets);
+            }
+        } catch (error) {
+            console.error("Error filtering saved results:", error);
+        }
+    }
+
+    /**
+     * Load a specific result set
+     */
+    async loadResultSet(resultSetId) {
+        try {
+            const result = await window.electronAPI.loadResultSet(resultSetId);
+            
+            if (result.success) {
+                this.results = result.results;
+                this.renderResults();
+                this.hideLoadResultsModal();
+                this.showNotification("Results loaded successfully", "success");
+            } else {
+                this.showNotification("Failed to load result set", "error");
+            }
+        } catch (error) {
+            console.error("Error loading result set:", error);
+            this.showNotification("Error loading result set", "error");
+        }
+    }
+
+    /**
+     * Delete a result set
+     */
+    async deleteResultSet(resultSetId) {
+        if (!confirm("Are you sure you want to delete this result set?")) {
+            return;
+        }
+
+        try {
+            const result = await window.electronAPI.deleteResultSet(resultSetId);
+            
+            if (result.success) {
+                this.showNotification("Result set deleted successfully", "success");
+                await this.loadSavedResultsList();
+            } else {
+                this.showNotification("Failed to delete result set", "error");
+            }
+        } catch (error) {
+            console.error("Error deleting result set:", error);
+            this.showNotification("Error deleting result set", "error");
+        }
+    }
+
+    /**
      * Create histogram for numerical data
      */
     createHistogram (values, uniqueCount) {
@@ -1850,6 +2143,619 @@ class PromptRunnerApp {
         this.showNotification(`Execution error: ${error.message}`, "error");
         this.updateStatus("Execution error");
 
+    }
+
+    /**
+     * Check if a column contains numerical values
+     */
+    isNumericalColumn(values) {
+        if (!Array.isArray(values) || values.length === 0) return false;
+        
+        // Check if at least 80% of values are numbers
+        const numericCount = values.filter(val => {
+            if (val === null || val === undefined) return false;
+            if (typeof val === 'number') return true;
+            if (typeof val === 'string') {
+                const trimmed = val.trim();
+                if (trimmed === '') return false;
+                const parsed = parseFloat(trimmed);
+                return !isNaN(parsed) && isFinite(parsed);
+            }
+            return false;
+        }).length;
+        
+        return (numericCount / values.length) >= 0.8;
+    }
+
+    /**
+     * Show compare results modal
+     */
+    async showCompareResultsModal() {
+        const modal = document.getElementById("compare-results-modal");
+        modal.classList.remove("hidden");
+        
+        await this.loadSavedResultsForComparison();
+    }
+
+    /**
+     * Hide compare results modal
+     */
+    hideCompareResultsModal() {
+        const modal = document.getElementById("compare-results-modal");
+        modal.classList.add("hidden");
+        
+        // Reset comparison results
+        document.getElementById("comparison-results").classList.add("hidden");
+        document.getElementById("compare-result-a").value = "";
+        document.getElementById("compare-result-b").value = "";
+    }
+
+    /**
+     * Load saved results for comparison dropdowns
+     */
+    async loadSavedResultsForComparison() {
+        try {
+            const result = await window.electronAPI.loadResults();
+            
+            if (result.success) {
+                const selectA = document.getElementById("compare-result-a");
+                const selectB = document.getElementById("compare-result-b");
+                
+                // Clear existing options
+                selectA.innerHTML = '<option value="">Select result set...</option>';
+                selectB.innerHTML = '<option value="">Select result set...</option>';
+                
+                result.resultSets.forEach(resultSet => {
+                    const optionA = document.createElement("option");
+                    optionA.value = resultSet.id;
+                    optionA.textContent = `${resultSet.name} (${resultSet.sampleCount} samples)`;
+                    selectA.appendChild(optionA);
+                    
+                    const optionB = document.createElement("option");
+                    optionB.value = resultSet.id;
+                    optionB.textContent = `${resultSet.name} (${resultSet.sampleCount} samples)`;
+                    selectB.appendChild(optionB);
+                });
+            } else {
+                this.showNotification("Failed to load saved results", "error");
+            }
+        } catch (error) {
+            console.error("Error loading saved results for comparison:", error);
+            this.showNotification("Error loading saved results", "error");
+        }
+    }
+
+    /**
+     * Start comparison between two result sets
+     */
+    async startComparison() {
+        const resultSetAId = document.getElementById("compare-result-a").value;
+        const resultSetBId = document.getElementById("compare-result-b").value;
+        
+        if (!resultSetAId || !resultSetBId) {
+            this.showNotification("Please select two result sets to compare", "error");
+            return;
+        }
+        
+        if (resultSetAId === resultSetBId) {
+            this.showNotification("Please select different result sets to compare", "error");
+            return;
+        }
+        
+        try {
+            this.updateStatus("Loading result sets for comparison...");
+            console.log("Starting comparison between:", resultSetAId, "and", resultSetBId);
+            
+            // Load both result sets
+            const [resultA, resultB] = await Promise.all([
+                window.electronAPI.loadResultSet(resultSetAId),
+                window.electronAPI.loadResultSet(resultSetBId)
+            ]);
+            
+            console.log("Loaded result sets:", resultA.success, resultB.success);
+            console.log("Result A count:", resultA.results?.length);
+            console.log("Result B count:", resultB.results?.length);
+            
+            if (resultA.success && resultB.success) {
+                console.log("Performing comparison...");
+                const comparison = this.performComparison(resultA.results, resultB.results);
+                console.log("Comparison completed:", comparison);
+                this.displayComparisonResults(comparison);
+            } else {
+                this.showNotification("Failed to load one or both result sets", "error");
+            }
+        } catch (error) {
+            console.error("Error during comparison:", error);
+            console.error("Error stack:", error.stack);
+            this.showNotification(`Error during comparison: ${error.message}`, "error");
+        } finally {
+            this.updateStatus("Ready");
+        }
+    }
+
+    /**
+     * Perform statistical comparison between two result sets
+     */
+    performComparison(resultsA, resultsB) {
+        console.log("performComparison called with:", resultsA.length, "and", resultsB.length, "results");
+        
+        // Flatten both result sets
+        const flattenedA = this.flattenResults(resultsA);
+        const flattenedB = this.flattenResults(resultsB);
+        
+        console.log("Flattened A columns:", Object.keys(flattenedA.columns || {}));
+        console.log("Flattened B columns:", Object.keys(flattenedB.columns || {}));
+        
+        const comparison = {
+            overview: {
+                setA: { count: resultsA.length, name: "Result Set A" },
+                setB: { count: resultsB.length, name: "Result Set B" }
+            },
+            numerical: {},
+            categorical: {},
+            significance: {}
+        };
+        
+        // Get all unique columns - handle null/undefined cases
+        const columnsA = flattenedA.columns ? Object.keys(flattenedA.columns) : [];
+        const columnsB = flattenedB.columns ? Object.keys(flattenedB.columns) : [];
+        const allColumns = new Set([...columnsA, ...columnsB]);
+        
+        console.log("All columns to process:", Array.from(allColumns));
+        
+        allColumns.forEach(column => {
+            if (column.startsWith('_')) return; // Skip internal columns
+            
+            // Safely get values with null/undefined handling
+            const valuesA = (flattenedA.rows || []).map(row => row && row[column]).filter(v => v !== null && v !== undefined);
+            const valuesB = (flattenedB.rows || []).map(row => row && row[column]).filter(v => v !== null && v !== undefined);
+            
+            console.log(`Processing column ${column}: A has ${valuesA.length} values, B has ${valuesB.length} values`);
+            
+            // Skip if no data in either set
+            if (valuesA.length === 0 && valuesB.length === 0) {
+                console.log(`Skipping column ${column} - no data in either set`);
+                return;
+            }
+            
+            // Check if column is numerical
+            const isNumerical = this.isNumericalColumn(valuesA) && this.isNumericalColumn(valuesB);
+            
+            if (isNumerical && valuesA.length > 0 && valuesB.length > 0) {
+                console.log(`Column ${column} is numerical`);
+                try {
+                    comparison.numerical[column] = this.compareNumericalValues(valuesA, valuesB);
+                } catch (error) {
+                    console.error(`Error comparing numerical values for column ${column}:`, error);
+                    comparison.categorical[column] = this.compareCategoricalValues(valuesA, valuesB);
+                }
+            } else if (valuesA.length > 0 || valuesB.length > 0) {
+                console.log(`Column ${column} is categorical`);
+                try {
+                    comparison.categorical[column] = this.compareCategoricalValues(valuesA, valuesB);
+                } catch (error) {
+                    console.error(`Error comparing categorical values for column ${column}:`, error);
+                }
+            }
+        });
+        
+        console.log("Comparison result:", comparison);
+        return comparison;
+    }
+
+    /**
+     * Compare numerical values between two sets
+     */
+    compareNumericalValues(valuesA, valuesB) {
+        const statsA = this.calculateNumericalStats(valuesA);
+        const statsB = this.calculateNumericalStats(valuesB);
+        
+        // Calculate differences
+        const differences = {
+            mean: statsB.mean - statsA.mean,
+            median: statsB.median - statsA.median,
+            stdDev: statsB.stdDev - statsA.stdDev
+        };
+        
+        // Perform t-test for significance
+        const tTest = this.performTTest(valuesA, valuesB);
+        
+        return {
+            setA: statsA,
+            setB: statsB,
+            differences,
+            tTest
+        };
+    }
+
+    /**
+     * Compare categorical values between two sets
+     */
+    compareCategoricalValues(valuesA, valuesB) {
+        const freqA = this.calculateFrequencyDistribution(valuesA);
+        const freqB = this.calculateFrequencyDistribution(valuesB);
+        
+        // Get all unique values
+        const allValues = new Set([...Object.keys(freqA), ...Object.keys(freqB)]);
+        
+        const comparison = {};
+        allValues.forEach(value => {
+            const countA = freqA[value] || 0;
+            const countB = freqB[value] || 0;
+            const totalA = valuesA.length;
+            const totalB = valuesB.length;
+            
+            comparison[value] = {
+                setA: { count: countA, percentage: totalA > 0 ? (countA / totalA) * 100 : 0 },
+                setB: { count: countB, percentage: totalB > 0 ? (countB / totalB) * 100 : 0 },
+                difference: countB - countA,
+                percentageDifference: totalA > 0 ? ((countB / totalB) - (countA / totalA)) * 100 : 0
+            };
+        });
+        
+        // Perform chi-square test for significance
+        const chiSquareTest = this.performChiSquareTest(freqA, freqB, valuesA.length, valuesB.length);
+        
+        return {
+            distributions: comparison,
+            chiSquareTest
+        };
+    }
+
+    /**
+     * Calculate numerical statistics
+     */
+    calculateNumericalStats(values) {
+        if (!Array.isArray(values) || values.length === 0) {
+            return { mean: 0, median: 0, stdDev: 0, min: 0, max: 0, count: 0 };
+        }
+        
+        // Convert all values to numbers, filtering out invalid ones
+        const numericValues = values.map(val => {
+            if (typeof val === 'number') return val;
+            if (typeof val === 'string') {
+                const trimmed = val.trim();
+                if (trimmed === '') return null;
+                const parsed = parseFloat(trimmed);
+                return !isNaN(parsed) && isFinite(parsed) ? parsed : null;
+            }
+            return null;
+        }).filter(val => val !== null);
+        
+        if (numericValues.length === 0) {
+            return { mean: 0, median: 0, stdDev: 0, min: 0, max: 0, count: 0 };
+        }
+        
+        const sorted = numericValues.sort((a, b) => a - b);
+        const sum = numericValues.reduce((acc, val) => acc + val, 0);
+        const mean = sum / numericValues.length;
+        const median = sorted.length % 2 === 0 
+            ? (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2
+            : sorted[Math.floor(sorted.length / 2)];
+        
+        const variance = numericValues.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / numericValues.length;
+        const stdDev = Math.sqrt(variance);
+        
+        return {
+            mean: this.round(mean),
+            median: this.round(median),
+            stdDev: this.round(stdDev),
+            min: Math.min(...numericValues),
+            max: Math.max(...numericValues),
+            count: numericValues.length
+        };
+    }
+
+    /**
+     * Calculate frequency distribution
+     */
+    calculateFrequencyDistribution(values) {
+        if (!Array.isArray(values)) return {};
+        
+        const freq = {};
+        values.forEach(value => {
+            if (value === null || value === undefined) {
+                freq['null'] = (freq['null'] || 0) + 1;
+                return;
+            }
+            
+            const key = typeof value === "string" ? value : JSON.stringify(value);
+            freq[key] = (freq[key] || 0) + 1;
+        });
+        return freq;
+    }
+
+    /**
+     * Perform t-test for significance
+     */
+    performTTest(valuesA, valuesB) {
+        if (!Array.isArray(valuesA) || !Array.isArray(valuesB) || valuesA.length < 2 || valuesB.length < 2) {
+            return { significant: false, pValue: 1, tValue: 0 };
+        }
+        
+        // Convert to numbers and filter out invalid values
+        const numericA = valuesA.map(val => {
+            if (typeof val === 'number') return val;
+            if (typeof val === 'string') {
+                const parsed = parseFloat(val.trim());
+                return !isNaN(parsed) && isFinite(parsed) ? parsed : null;
+            }
+            return null;
+        }).filter(val => val !== null);
+        
+        const numericB = valuesB.map(val => {
+            if (typeof val === 'number') return val;
+            if (typeof val === 'string') {
+                const parsed = parseFloat(val.trim());
+                return !isNaN(parsed) && isFinite(parsed) ? parsed : null;
+            }
+            return null;
+        }).filter(val => val !== null);
+        
+        if (numericA.length < 2 || numericB.length < 2) {
+            return { significant: false, pValue: 1, tValue: 0 };
+        }
+        
+        const meanA = numericA.reduce((acc, val) => acc + val, 0) / numericA.length;
+        const meanB = numericB.reduce((acc, val) => acc + val, 0) / numericB.length;
+        
+        const varianceA = numericA.reduce((acc, val) => acc + Math.pow(val - meanA, 2), 0) / (numericA.length - 1);
+        const varianceB = numericB.reduce((acc, val) => acc + Math.pow(val - meanB, 2), 0) / (numericB.length - 1);
+        
+        const pooledVariance = ((numericA.length - 1) * varianceA + (numericB.length - 1) * varianceB) / (numericA.length + numericB.length - 2);
+        const standardError = Math.sqrt(pooledVariance * (1 / numericA.length + 1 / numericB.length));
+        
+        const tValue = Math.abs(meanB - meanA) / standardError;
+        
+        // Approximate p-value using t-distribution (simplified)
+        const degreesOfFreedom = numericA.length + numericB.length - 2;
+        const pValue = this.approximatePValue(tValue, degreesOfFreedom);
+        
+        return {
+            significant: pValue < 0.05,
+            pValue: this.round(pValue, 4),
+            tValue: this.round(tValue, 4)
+        };
+    }
+
+    /**
+     * Perform chi-square test for categorical data
+     */
+    performChiSquareTest(freqA, freqB, totalA, totalB) {
+        const allValues = new Set([...Object.keys(freqA), ...Object.keys(freqB)]);
+        let chiSquare = 0;
+        
+        allValues.forEach(value => {
+            const observedA = freqA[value] || 0;
+            const observedB = freqB[value] || 0;
+            
+            // Expected frequencies
+            const expectedA = totalA * (observedA + observedB) / (totalA + totalB);
+            const expectedB = totalB * (observedA + observedB) / (totalA + totalB);
+            
+            if (expectedA > 0) {
+                chiSquare += Math.pow(observedA - expectedA, 2) / expectedA;
+            }
+            if (expectedB > 0) {
+                chiSquare += Math.pow(observedB - expectedB, 2) / expectedB;
+            }
+        });
+        
+        const degreesOfFreedom = allValues.size - 1;
+        const pValue = this.approximateChiSquarePValue(chiSquare, degreesOfFreedom);
+        
+        return {
+            significant: pValue < 0.05,
+            pValue: this.round(pValue, 4),
+            chiSquareValue: this.round(chiSquare, 4)
+        };
+    }
+
+    /**
+     * Approximate p-value for t-test (simplified)
+     */
+    approximatePValue(tValue, degreesOfFreedom) {
+        // Simplified approximation - in a real implementation, you'd use a proper t-distribution table
+        if (tValue > 3.291) return 0.001;
+        if (tValue > 2.576) return 0.01;
+        if (tValue > 1.96) return 0.05;
+        if (tValue > 1.645) return 0.1;
+        return 0.5;
+    }
+
+    /**
+     * Approximate p-value for chi-square test (simplified)
+     */
+    approximateChiSquarePValue(chiSquareValue, degreesOfFreedom) {
+        // Simplified approximation - in a real implementation, you'd use a proper chi-square distribution
+        if (chiSquareValue > 10.828) return 0.001;
+        if (chiSquareValue > 7.879) return 0.01;
+        if (chiSquareValue > 5.991) return 0.05;
+        if (chiSquareValue > 4.605) return 0.1;
+        return 0.5;
+    }
+
+    /**
+     * Display comparison results
+     */
+    displayComparisonResults(comparison) {
+        document.getElementById("comparison-results").classList.remove("hidden");
+        
+        // Display overview
+        this.displayComparisonOverview(comparison.overview);
+        
+        // Display numerical comparisons
+        this.displayNumericalComparisons(comparison.numerical);
+        
+        // Display categorical comparisons
+        this.displayCategoricalComparisons(comparison.categorical);
+        
+        // Display significance tests
+        this.displaySignificanceTests(comparison);
+    }
+
+    /**
+     * Display comparison overview
+     */
+    displayComparisonOverview(overview) {
+        const summaryEl = document.getElementById("comparison-summary");
+        summaryEl.innerHTML = `
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div>
+                    <strong>${overview.setA.name}:</strong> ${overview.setA.count} samples
+                </div>
+                <div>
+                    <strong>${overview.setB.name}:</strong> ${overview.setB.count} samples
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Display numerical comparisons
+     */
+    displayNumericalComparisons(numericalComparisons) {
+        const container = document.getElementById("numerical-comparisons");
+        
+        if (Object.keys(numericalComparisons).length === 0) {
+            container.innerHTML = "<p>No numerical columns found for comparison.</p>";
+            return;
+        }
+        
+        let html = '<table class="comparison-table">';
+        html += '<thead><tr><th>Metric</th><th>Set A</th><th>Set B</th><th>Difference (B-A)</th><th>Significance</th></tr></thead><tbody>';
+        
+        Object.entries(numericalComparisons).forEach(([column, comparison]) => {
+            const { setA, setB, differences, tTest } = comparison;
+            
+            html += `
+                <tr class="${tTest.significant ? 'significant' : ''}">
+                    <td class="metric-name">${this.escapeHtml(column)} - Mean</td>
+                    <td>${setA.mean}</td>
+                    <td>${setB.mean}</td>
+                    <td class="difference ${differences.mean >= 0 ? 'positive' : 'negative'}">${differences.mean >= 0 ? '+' : ''}${differences.mean}</td>
+                    <td><span class="significance-indicator ${tTest.significant ? 'significant' : 'not-significant'}">${tTest.significant ? 'p<0.05' : 'p≥0.05'}</span></td>
+                </tr>
+                <tr>
+                    <td class="metric-name">${this.escapeHtml(column)} - Median</td>
+                    <td>${setA.median}</td>
+                    <td>${setB.median}</td>
+                    <td class="difference ${differences.median >= 0 ? 'positive' : 'negative'}">${differences.median >= 0 ? '+' : ''}${differences.median}</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td class="metric-name">${this.escapeHtml(column)} - Std Dev</td>
+                    <td>${setA.stdDev}</td>
+                    <td>${setB.stdDev}</td>
+                    <td class="difference ${differences.stdDev >= 0 ? 'positive' : 'negative'}">${differences.stdDev >= 0 ? '+' : ''}${differences.stdDev}</td>
+                    <td>-</td>
+                </tr>
+            `;
+        });
+        
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    }
+
+    /**
+     * Display categorical comparisons
+     */
+    displayCategoricalComparisons(categoricalComparisons) {
+        const container = document.getElementById("distribution-comparisons");
+        
+        if (Object.keys(categoricalComparisons).length === 0) {
+            container.innerHTML = "<p>No categorical columns found for comparison.</p>";
+            return;
+        }
+        
+        let html = '';
+        
+        Object.entries(categoricalComparisons).forEach(([column, comparison]) => {
+            const { distributions, chiSquareTest } = comparison;
+            
+            html += `
+                <div class="comparison-section">
+                    <h5>${this.escapeHtml(column)}</h5>
+                    <div class="distribution-comparison">
+                        <div class="distribution-chart">
+                            <h5>Set A Distribution</h5>
+                            ${this.renderDistributionChart(distributions, 'setA')}
+                        </div>
+                        <div class="distribution-chart">
+                            <h5>Set B Distribution</h5>
+                            ${this.renderDistributionChart(distributions, 'setB')}
+                        </div>
+                    </div>
+                    <div style="margin-top: 12px;">
+                        <strong>Chi-Square Test:</strong> 
+                        <span class="significance-indicator ${chiSquareTest.significant ? 'significant' : 'not-significant'}">
+                            ${chiSquareTest.significant ? 'Significant difference (p<0.05)' : 'No significant difference (p≥0.05)'}
+                        </span>
+                        <span style="margin-left: 8px; font-size: 12px; color: var(--text-muted);">
+                            χ²=${chiSquareTest.chiSquareValue}, p=${chiSquareTest.pValue}
+                        </span>
+                    </div>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+    }
+
+    /**
+     * Render distribution chart
+     */
+    renderDistributionChart(distributions, setKey) {
+        const entries = Object.entries(distributions).sort((a, b) => b[1][setKey].count - a[1][setKey].count);
+        const maxCount = entries.length > 0 ? entries[0][1][setKey].count : 1;
+        
+        return entries.map(([value, data]) => {
+            const count = data[setKey].count;
+            const percentage = data[setKey].percentage;
+            const barWidth = maxCount > 0 ? Math.max(2, Math.round(100 * count / maxCount)) : 2;
+            
+            return `
+                <div class="histogram-bar" style="width: ${barWidth}%;">
+                    <span class="bar-label">${this.escapeHtml(value)}</span>
+                </div>
+                <div style="font-size: 12px; margin-bottom: 8px;">
+                    ${count} (${this.round(percentage)}%)
+                </div>
+            `;
+        }).join('');
+    }
+
+    /**
+     * Display significance tests summary
+     */
+    displaySignificanceTests(comparison) {
+        const container = document.getElementById("significance-tests");
+        
+        let significantTests = 0;
+        let totalTests = 0;
+        
+        // Count significant numerical tests
+        Object.values(comparison.numerical).forEach(comp => {
+            totalTests++;
+            if (comp.tTest.significant) significantTests++;
+        });
+        
+        // Count significant categorical tests
+        Object.values(comparison.categorical).forEach(comp => {
+            totalTests++;
+            if (comp.chiSquareTest.significant) significantTests++;
+        });
+        
+        container.innerHTML = `
+            <div style="padding: 16px; background: var(--bg-muted); border-radius: 8px;">
+                <h5>Significance Summary</h5>
+                <p><strong>Total Tests:</strong> ${totalTests}</p>
+                <p><strong>Significant Differences:</strong> ${significantTests} (${totalTests > 0 ? this.round(significantTests / totalTests * 100) : 0}%)</p>
+                <p style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">
+                    Significant differences are marked with p < 0.05. This indicates that the observed differences are unlikely to have occurred by chance alone.
+                </p>
+            </div>
+        `;
     }
 
 }

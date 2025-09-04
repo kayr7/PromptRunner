@@ -1399,5 +1399,437 @@
     "output": "{\n  \"sentiment\": 5\n}",
     "templateId": "1756811752853",
     "provider": "openai"
+  },
+  {
+    "id": 0,
+    "input": {
+      "input_text": "this is total shit"
+    },
+    "output": "{\n  \"sentiment\": 1\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 1,
+    "input": {
+      "input_text": "this is amazing"
+    },
+    "output": "{\n  \"sentiment\": [5]\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 2,
+    "input": {
+      "input_text": "this is meh"
+    },
+    "output": "{\n  \"sentiment\": 2\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 3,
+    "input": {
+      "input_text": "this is great"
+    },
+    "output": "{\"sentiment\": 5}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 4,
+    "input": {
+      "input_text": "this is bad"
+    },
+    "output": "{\n  \"sentiment\": 2\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 5,
+    "input": {
+      "input_text": "this is good"
+    },
+    "output": "{\n  \"sentiment\": 4\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 6,
+    "input": {
+      "input_text": "this is okay"
+    },
+    "output": "{\n  \"sentiment\": 3\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 7,
+    "input": {
+      "input_text": "this is terrible"
+    },
+    "output": "{\n  \"sentiment\": 1\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 8,
+    "input": {
+      "input_text": "this is fantastic"
+    },
+    "output": "{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 9,
+    "input": {
+      "input_text": "what a fantastic movie"
+    },
+    "output": "{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 10,
+    "input": {
+      "input_text": "what a terrible movie"
+    },
+    "output": "{\n  \"sentiment\": 1\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 11,
+    "input": {
+      "input_text": "what a good movie"
+    },
+    "output": "{\n  \"sentiment\": 4\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 12,
+    "input": {
+      "input_text": "what a bad movie"
+    },
+    "output": "{\n  \"sentiment\": 2\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 13,
+    "input": {
+      "input_text": "what a great movie"
+    },
+    "output": "{\n  \"sentiment\": [5]\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 14,
+    "input": {
+      "input_text": "what a terrible movie"
+    },
+    "output": "{\n  \"sentiment\": [1]\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 15,
+    "input": {
+      "input_text": "what a fantastic movie"
+    },
+    "output": "{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 0,
+    "input": {
+      "input_text": "this is total shit"
+    },
+    "output": "{\n  \"sentiment\": [1]\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 1,
+    "input": {
+      "input_text": "this is amazing"
+    },
+    "output": "{\n  \"sentiment\": [5]\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 2,
+    "input": {
+      "input_text": "this is meh"
+    },
+    "output": "{\n  \"sentiment\": [3]\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 3,
+    "input": {
+      "input_text": "this is great"
+    },
+    "output": "{\n  \"sentiment\": [5]\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 4,
+    "input": {
+      "input_text": "this is bad"
+    },
+    "output": "{\n  \"sentiment\": [1]\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 5,
+    "input": {
+      "input_text": "this is good"
+    },
+    "output": "{\n  \"sentiment\": 4\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 6,
+    "input": {
+      "input_text": "this is okay"
+    },
+    "output": "{\"sentiment\":[3]}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 7,
+    "input": {
+      "input_text": "this is terrible"
+    },
+    "output": "{\n  \"sentiment\": [1]\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 8,
+    "input": {
+      "input_text": "this is fantastic"
+    },
+    "output": "{\n  \"sentiment\": [5]\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 9,
+    "input": {
+      "input_text": "what a fantastic movie"
+    },
+    "output": "{\n  \"sentiment\": [5]\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 10,
+    "input": {
+      "input_text": "what a terrible movie"
+    },
+    "output": "{\n  \"sentiment\": [1]\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 11,
+    "input": {
+      "input_text": "what a good movie"
+    },
+    "output": "{\n  \"sentiment\": [5]\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 12,
+    "input": {
+      "input_text": "what a bad movie"
+    },
+    "output": "{\n  \"sentiment\": [1]\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 13,
+    "input": {
+      "input_text": "what a great movie"
+    },
+    "output": "{\n  \"sentiment\": [5]\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 14,
+    "input": {
+      "input_text": "what a terrible movie"
+    },
+    "output": "{\n  \"sentiment\": [1]\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 15,
+    "input": {
+      "input_text": "what a fantastic movie"
+    },
+    "output": "{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 0,
+    "input": {
+      "input_text": "this is total shit"
+    },
+    "output": "{\n  \"sentiment\": 1\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 1,
+    "input": {
+      "input_text": "this is amazing"
+    },
+    "output": "{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 2,
+    "input": {
+      "input_text": "this is meh"
+    },
+    "output": "{\n  \"sentiment\": 3\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 3,
+    "input": {
+      "input_text": "this is great"
+    },
+    "output": "{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 4,
+    "input": {
+      "input_text": "this is bad"
+    },
+    "output": "{\n  \"sentiment\": 1\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 5,
+    "input": {
+      "input_text": "this is good"
+    },
+    "output": "{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 6,
+    "input": {
+      "input_text": "this is okay"
+    },
+    "output": "{\n  \"sentiment\": 3\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 7,
+    "input": {
+      "input_text": "this is terrible"
+    },
+    "output": "{\n  \"sentiment\": 1\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 8,
+    "input": {
+      "input_text": "this is fantastic"
+    },
+    "output": "{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 9,
+    "input": {
+      "input_text": "what a fantastic movie"
+    },
+    "output": "{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 10,
+    "input": {
+      "input_text": "what a terrible movie"
+    },
+    "output": "{\"sentiment\": 1}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 11,
+    "input": {
+      "input_text": "what a good movie"
+    },
+    "output": "{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 12,
+    "input": {
+      "input_text": "what a bad movie"
+    },
+    "output": "{\n  \"sentiment\": 1\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 13,
+    "input": {
+      "input_text": "what a great movie"
+    },
+    "output": "{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 14,
+    "input": {
+      "input_text": "what a terrible movie"
+    },
+    "output": "{\n  \"sentiment\": 1\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
+  },
+  {
+    "id": 15,
+    "input": {
+      "input_text": "what a fantastic movie"
+    },
+    "output": "{\n  \"sentiment\": 5\n}",
+    "templateId": "1756811752853",
+    "provider": "openai"
   }
 ]

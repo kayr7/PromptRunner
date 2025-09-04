@@ -41,6 +41,11 @@ PromptRunner is an Electron application designed to facilitate easy interaction 
 + **Aggregations**: Compute numeric statistics (sum, average, median) and categorical distributions (value frequencies with percentages). JSON extraction works even when outputs contain explanatory text mixed with structured data.
   - Categorical aggregation is performed only for columns with < 50 distinct classes; otherwise it is skipped.
   - Distributions are visualized with inline histograms.
+- **Result Comparison**: Side-by-side comparison of two result sets with statistical analysis
+  - Numerical value comparison with mean, median, standard deviation
+  - Distribution comparison with visualizations
+  - Significance testing for differences (t-tests, chi-square tests)
+  - Key metrics comparison and difference highlighting
 - **Export Capabilities**: Export results in various formats (JSON, CSV, etc.)
 - **Visualization**: Basic charts and graphs for result analysis
 

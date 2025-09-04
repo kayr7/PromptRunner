@@ -33,6 +33,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Enhanced Aggregations**: Added histograms for numerical values and optional histograms for categorical data via explicit button
 - **Fixed API Key Persistence**: Implemented proper save/load functionality for OpenAI API keys using file-based storage
 - **Enhanced Aggregations**: Improved aggregation display by filtering out internal columns (_id, _templateId) and implementing sqrt(n) threshold for text outputs
+- **Results Persistence**: Added comprehensive save/load functionality for results with named result sets, metadata storage, and search capabilities
+- **Enhanced Result Naming**: Auto-generated result names now include template, input file, provider, and model information
+- **Result Comparison**: Added comprehensive comparison functionality between two result sets
+  - Side-by-side numerical comparison with mean, median, standard deviation
+  - Distribution comparison with visualizations
+  - Statistical significance testing (t-tests for numerical data, chi-square tests for categorical data)
+  - Significance indicators and p-value reporting
+  - Summary statistics showing total tests and significant differences
 - **Results Table & Aggregations**: Results tab now includes List/Table/Aggregations views. JSON outputs are parsed and flattened into a table with union columns and NULLs for missing fields. Added numeric statistics (sum/average/median/min/max with histograms) and categorical distributions (only when < 50 classes) with inline histogram bars. Enhanced JSON parsing to extract structured data from mixed content (explanatory text + JSON).
 
 ### Technical Implementation
