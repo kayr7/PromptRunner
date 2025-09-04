@@ -27,8 +27,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
     "validateData": (data) => ipcRenderer.invoke("validate-data", data),
 
     // Result operations
-    "saveResults": (results) => ipcRenderer.invoke("save-results", results),
+    "saveResults": (results, metadata) => ipcRenderer.invoke("save-results", results, metadata),
     "loadResults": (filters) => ipcRenderer.invoke("load-results", filters),
+    "loadResultSet": (resultSetId) => ipcRenderer.invoke("load-result-set", resultSetId),
+    "deleteResultSet": (resultSetId) => ipcRenderer.invoke("delete-result-set", resultSetId),
     "exportResults": (results, format) => ipcRenderer.invoke("export-results", results, format),
 
     // Security operations

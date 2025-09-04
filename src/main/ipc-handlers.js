@@ -251,7 +251,8 @@ function setupIpcHandlers (mainWindow) {
                         input: item,
                         output: result.result,
                         templateId: template.id,
-                        provider: provider
+                        provider: provider,
+                        model: config.model // Add model information
                     });
                 } else {
                     results.push({
@@ -260,7 +261,8 @@ function setupIpcHandlers (mainWindow) {
                         output: null,
                         error: result.error,
                         templateId: template.id,
-                        provider: provider
+                        provider: provider,
+                        model: config.model // Add model information
                     });
                 }
 
@@ -457,31 +459,65 @@ function setupIpcHandlers (mainWindow) {
 
     });
 
-    // Result operations (placeholder implementations)
-    ipcMain.handle("save-results", async (event, results) => {
+    // Result operations
+    ipcMain.handle("save-results", async (event, results, metadata = {}) => {
 
         try {
 
-            const resultsFile = path.join(process.cwd(), 'data/results.json');
-            await fs.mkdir(path.dirname(resultsFile), { recursive: true });
+            const fs = require("fs").promises;
+            const path = require("path");
+            
+            const resultsDir = path.join(process.cwd(), 'data/results');
+            await fs.mkdir(resultsDir, { recursive: true });
 
-            let existing = [];
+            // Create a unique ID for this result set
+            const resultSetId = Date.now().toString();
+            const timestamp = new Date().toISOString();
+            
+            // Create metadata for this result set
+            const resultSetMetadata = {
+                id: resultSetId,
+                name: metadata.name || `Result Set ${resultSetId}`,
+                description: metadata.description || "",
+                timestamp: timestamp,
+                templateId: metadata.templateId,
+                templateName: metadata.templateName,
+                provider: metadata.provider,
+                model: metadata.model,
+                sampleCount: results.length,
+                ...metadata
+            };
+
+            // Save the results
+            const resultsFile = path.join(resultsDir, `${resultSetId}.json`);
+            await fs.writeFile(resultsFile, JSON.stringify(results, null, 2), 'utf8');
+
+            // Save the metadata
+            const metadataFile = path.join(resultsDir, `${resultSetId}.meta.json`);
+            await fs.writeFile(metadataFile, JSON.stringify(resultSetMetadata, null, 2), 'utf8');
+
+            // Update the index file
+            const indexFile = path.join(resultsDir, 'index.json');
+            let index = [];
             try {
-                const content = await fs.readFile(resultsFile, 'utf8');
-                existing = JSON.parse(content);
+                const content = await fs.readFile(indexFile, 'utf8');
+                index = JSON.parse(content);
             } catch (_) {
-                existing = [];
+                index = [];
             }
+            
+            index.push(resultSetMetadata);
+            // Sort by timestamp (newest first)
+            index.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            await fs.writeFile(indexFile, JSON.stringify(index, null, 2), 'utf8');
 
-            const updated = [...existing, ...results];
-            await fs.writeFile(resultsFile, JSON.stringify(updated, null, 2), 'utf8');
-
-            return {"success": true};
+            return {"success": true, "resultSetId": resultSetId};
 
         } catch (error) {
 
-            return {"success": false,
-                "error": error.message};
+            console.error("Error saving results:", error);
+            return {"success": false, "error": error.message};
 
         }
 
@@ -491,30 +527,102 @@ function setupIpcHandlers (mainWindow) {
 
         try {
 
-            const resultsFile = path.join(process.cwd(), 'data/results.json');
-            let results = [];
+            const fs = require("fs").promises;
+            const path = require("path");
+            
+            const resultsDir = path.join(process.cwd(), 'data/results');
+            const indexFile = path.join(resultsDir, 'index.json');
+            
+            let index = [];
             try {
-                const content = await fs.readFile(resultsFile, 'utf8');
-                results = JSON.parse(content);
+                const content = await fs.readFile(indexFile, 'utf8');
+                index = JSON.parse(content);
             } catch (_) {
-                results = [];
+                index = [];
             }
 
-            // Basic filtering by templateId/provider if provided
-            if (filters && (filters.templateId || filters.provider)) {
-                results = results.filter(r => (
-                    (!filters.templateId || r.templateId === filters.templateId) &&
-                    (!filters.provider || r.provider === filters.provider)
-                ));
+            // Filter the index if filters are provided
+            if (filters) {
+                if (filters.templateId) {
+                    index = index.filter(r => r.templateId === filters.templateId);
+                }
+                if (filters.provider) {
+                    index = index.filter(r => r.provider === filters.provider);
+                }
+                if (filters.search) {
+                    const searchLower = filters.search.toLowerCase();
+                    index = index.filter(r => 
+                        r.name.toLowerCase().includes(searchLower) ||
+                        r.description.toLowerCase().includes(searchLower) ||
+                        r.templateName.toLowerCase().includes(searchLower)
+                    );
+                }
             }
 
-            return {"success": true,
-                results};
+            return {"success": true, "resultSets": index};
 
         } catch (error) {
 
-            return {"success": false,
-                "error": error.message};
+            console.error("Error loading results:", error);
+            return {"success": false, "error": error.message};
+
+        }
+
+    });
+
+    ipcMain.handle("load-result-set", async (event, resultSetId) => {
+
+        try {
+
+            const fs = require("fs").promises;
+            const path = require("path");
+            
+            const resultsDir = path.join(process.cwd(), 'data/results');
+            const resultsFile = path.join(resultsDir, `${resultSetId}.json`);
+            
+            const content = await fs.readFile(resultsFile, 'utf8');
+            const results = JSON.parse(content);
+
+            return {"success": true, "results": results};
+
+        } catch (error) {
+
+            console.error("Error loading result set:", error);
+            return {"success": false, "error": error.message};
+
+        }
+
+    });
+
+    ipcMain.handle("delete-result-set", async (event, resultSetId) => {
+
+        try {
+
+            const fs = require("fs").promises;
+            const path = require("path");
+            
+            const resultsDir = path.join(process.cwd(), 'data/results');
+            const resultsFile = path.join(resultsDir, `${resultSetId}.json`);
+            const metadataFile = path.join(resultsDir, `${resultSetId}.meta.json`);
+            
+            // Delete the files
+            await fs.unlink(resultsFile);
+            await fs.unlink(metadataFile);
+            
+            // Update the index
+            const indexFile = path.join(resultsDir, 'index.json');
+            const content = await fs.readFile(indexFile, 'utf8');
+            let index = JSON.parse(content);
+            
+            index = index.filter(r => r.id !== resultSetId);
+            await fs.writeFile(indexFile, JSON.stringify(index, null, 2), 'utf8');
+
+            return {"success": true};
+
+        } catch (error) {
+
+            console.error("Error deleting result set:", error);
+            return {"success": false, "error": error.message};
 
         }
 
