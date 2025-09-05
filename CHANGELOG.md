@@ -74,6 +74,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - T-test for significant differences in text lengths between result sets
   - Handles mixed data types by converting to strings for length analysis
   - Works even when only one result set contains text data
+- **Identical Input Analysis**: Compare how different providers handle the same inputs
+  - Automatically finds matching inputs between result sets
+  - Side-by-side output comparison for identical prompts
+  - Difference scoring based on length, word count, and content similarity
+  - Structured data comparison for JSON outputs with key-level differences
+  - Summary statistics showing identical vs different outputs
+  - Provider combination analysis to identify common comparisons
+  - Visual diff display with color-coded differences and metrics
 - Development environment with webpack, ESLint, and testing setup
 - Documentation: PRD, PR-FAQ, Architecture, FileDoc, README
 - **Template Management**: Proper template saving, loading, editing, and deletion with file-based storage

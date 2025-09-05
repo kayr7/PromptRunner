@@ -1050,3 +1050,54 @@
     flex-direction: column;
   }
 }
+
+/* Restrict horizontal scrolling to comparison tables only */
+#compare-results-modal,
+#compare-results-modal .modal-content,
+#compare-results-modal .modal-body,
+#compare-results-modal .comparison-results,
+#compare-results-modal .comparison-overview,
+#compare-results-modal .comparison-details,
+#compare-results-modal .comparison-section {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Table containers handle horizontal/vertical scrolling */
+#compare-results-modal .comparison-section .data-table {
+  width: 100%;
+  max-width: 100%;
+  display: block;
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 60vh;
+}
+
+#compare-results-modal .comparison-section .data-table table {
+  width: max-content;
+  min-width: 100%;
+}
+
+/* Floating tooltip for showing full cell content on hover */
+.cell-hover-tooltip {
+  position: fixed;
+  z-index: 3000;
+  max-width: 60vw;
+  max-height: 50vh;
+  overflow: auto;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 10px 12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  pointer-events: none;
+}
+
+.cell-hover-tooltip.hidden {
+  display: none;
+}

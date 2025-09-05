@@ -561,7 +561,7 @@ class PromptRunnerApp {
                     nameInput.dataset.templateId = result.id;
                     nameInput.dataset.originalName = name;
                 } else {
-                    this.showNotification("Template saved successfully", "success");
+                this.showNotification("Template saved successfully", "success");
                 }
                 
                 // Update templates directly from the response
@@ -2962,12 +2962,12 @@ class PromptRunnerApp {
                 // Do categorical analysis for non-long-text columns OR as fallback
                 if (!isLongText && (valuesA.length > 0 || valuesB.length > 0)) {
                     console.log(`Column ${column} is categorical - performing categorical comparison`);
-                    try {
-                        comparison.categorical[column] = this.compareCategoricalValues(valuesA, valuesB);
+                try {
+                    comparison.categorical[column] = this.compareCategoricalValues(valuesA, valuesB);
                         console.log(`Categorical comparison result for ${column}:`, comparison.categorical[column]);
-                    } catch (error) {
-                        console.error(`Error comparing categorical values for column ${column}:`, error);
-                    }
+                } catch (error) {
+                    console.error(`Error comparing categorical values for column ${column}:`, error);
+                }
                 } else if (isLongText) {
                     console.log(`Column ${column} is long text - skipping categorical analysis to avoid noise`);
                 }
@@ -2984,7 +2984,351 @@ class PromptRunnerApp {
         console.log(`- Categorical columns: ${Object.keys(comparison.categorical).length}`, Object.keys(comparison.categorical));
         console.log(`- Text length columns: ${Object.keys(comparison.textLength).length}`, Object.keys(comparison.textLength));
         
+        // Add identical input analysis
+        console.log("Analyzing identical inputs...");
+        try {
+            comparison.identicalInputs = this.analyzeIdenticalInputs(resultsA, resultsB);
+            console.log("Identical inputs analysis result:", comparison.identicalInputs);
+        } catch (error) {
+            console.error("Error analyzing identical inputs:", error);
+        }
+
         return comparison;
+    }
+
+    /**
+     * Analyze identical inputs and their output differences
+     */
+    analyzeIdenticalInputs(resultsA, resultsB) {
+        console.log("Creating full table merge based on identical inputs...");
+        
+        // First, flatten both result sets using the same logic as the regular table view
+        const flattenedA = this.flattenResults(resultsA);
+        const flattenedB = this.flattenResults(resultsB);
+        
+        console.log("Flattened A rows:", flattenedA.rows.length, "keys:", flattenedA.keys.length);
+        console.log("Flattened B rows:", flattenedB.rows.length, "keys:", flattenedB.keys.length);
+        
+        // Get input columns (keys that start with "input.")
+        const inputColumns = flattenedA.keys.filter(key => key.startsWith('input.'));
+        console.log("Input columns found:", inputColumns);
+        
+        if (inputColumns.length === 0) {
+            console.warn("No input columns found for merging");
+            return {
+                totalMatches: 0,
+                matches: [],
+                mergedTable: { headers: [], rows: [] },
+                summary: this.summarizeIdenticalInputs([])
+            };
+        }
+        
+        // Create input signature for each row (using input columns only)
+        const createInputSignature = (row) => {
+            const inputValues = {};
+            inputColumns.forEach(col => {
+                inputValues[col] = row[col];
+            });
+            return JSON.stringify(inputValues);
+        };
+        
+        // Group rows by input signature
+        const groupedA = new Map();
+        const groupedB = new Map();
+        
+        flattenedA.rows.forEach((row, index) => {
+            const signature = createInputSignature(row);
+            if (!groupedA.has(signature)) {
+                groupedA.set(signature, []);
+            }
+            groupedA.get(signature).push({ ...row, _originalIndex: index, _set: 'A' });
+        });
+        
+        flattenedB.rows.forEach((row, index) => {
+            const signature = createInputSignature(row);
+            if (!groupedB.has(signature)) {
+                groupedB.set(signature, []);
+            }
+            groupedB.get(signature).push({ ...row, _originalIndex: index, _set: 'B' });
+        });
+        
+        // Find matching input signatures and create merged rows
+        const mergedRows = [];
+        const allColumns = new Set([...flattenedA.keys, ...flattenedB.keys]);
+        
+        // For each matching input signature, create comparison rows
+        for (const [signature, rowsA] of groupedA) {
+            if (groupedB.has(signature)) {
+                const rowsB = groupedB.get(signature);
+                
+                // Create all combinations of A x B for this input
+                rowsA.forEach((rowA, indexA) => {
+                    rowsB.forEach((rowB, indexB) => {
+                        const mergedRow = this.createMergedRow(rowA, rowB, allColumns, indexA, indexB);
+                        mergedRows.push(mergedRow);
+                    });
+                });
+            }
+        }
+        
+        console.log(`Created ${mergedRows.length} merged rows from ${groupedA.size} unique inputs`);
+        
+        // Build the complete merged table structure
+        const mergedTable = this.buildMergedTableStructure(mergedRows, allColumns, inputColumns);
+        
+        // Calculate summary statistics
+        const summary = this.summarizeIdenticalInputs(mergedRows);
+        
+        return {
+            totalMatches: mergedRows.length,
+            uniqueInputs: groupedA.size,
+            matches: mergedRows, // Return ALL matches, no limit
+            mergedTable: mergedTable,
+            summary: summary
+        };
+    }
+
+    /**
+     * Create a merged row from two matching input rows
+     */
+    createMergedRow(rowA, rowB, allColumns, indexA, indexB) {
+        const mergedRow = {
+            _matchIndex: null, // Will be set later
+            _inputSignature: null, // Will be set later
+            _isIdentical: null, // Will be calculated later
+            _differenceScore: 0
+        };
+        
+        // Add all columns, with set A and B data side by side
+        for (const column of allColumns) {
+            if (column.startsWith('input.')) {
+                // Input columns should be the same, use from either set
+                mergedRow[column] = rowA[column] !== undefined ? rowA[column] : rowB[column];
+            } else if (column.startsWith('_')) {
+                // Internal columns - add separately for each set
+                mergedRow[`${column} (A)`] = rowA[column];
+                mergedRow[`${column} (B)`] = rowB[column];
+            } else {
+                // Output columns - add side by side
+                mergedRow[`${column} (A)`] = rowA[column];
+                mergedRow[`${column} (B)`] = rowB[column];
+                
+                // Calculate differences for this column
+                if (rowA[column] !== rowB[column]) {
+                    if (typeof rowA[column] === 'string' && typeof rowB[column] === 'string') {
+                        mergedRow._differenceScore += Math.abs(rowA[column].length - rowB[column].length) * 0.1;
+                    } else if (rowA[column] !== rowB[column]) {
+                        mergedRow._differenceScore += 10; // Different values
+                    }
+                }
+            }
+        }
+        
+        // Calculate if outputs are identical (excluding input and internal columns)
+        const outputColumnsA = {};
+        const outputColumnsB = {};
+        
+        for (const column of allColumns) {
+            if (!column.startsWith('input.') && !column.startsWith('_')) {
+                outputColumnsA[column] = rowA[column];
+                outputColumnsB[column] = rowB[column];
+            }
+        }
+        
+        mergedRow._isIdentical = JSON.stringify(outputColumnsA) === JSON.stringify(outputColumnsB);
+        mergedRow._differenceScore = this.round(mergedRow._differenceScore, 2);
+        
+        return mergedRow;
+    }
+
+    /**
+     * Build the merged table structure with proper headers
+     */
+    buildMergedTableStructure(mergedRows, allColumns, inputColumns) {
+        if (mergedRows.length === 0) {
+            return { headers: [], rows: [] };
+        }
+        
+        // Build headers: input columns, then paired output columns, then meta columns
+        const headers = [];
+        
+        // Add input columns first (not duplicated)
+        inputColumns.forEach(col => {
+            headers.push(col);
+        });
+        
+        // Add provider columns
+        headers.push('Provider A', 'Provider B');
+        
+        // Add output columns side by side
+        const outputColumns = Array.from(allColumns).filter(col => 
+            !col.startsWith('input.') && !col.startsWith('_')
+        ).sort();
+        
+        outputColumns.forEach(col => {
+            headers.push(`${col} (A)`);
+            headers.push(`${col} (B)`);
+        });
+        
+        // Add comparison metadata
+        headers.push('Status', 'Difference Score');
+        
+        // Build rows with proper data mapping
+        const tableRows = mergedRows.map((mergedRow, index) => {
+            const row = {
+                _matchIndex: index + 1,
+                _isIdentical: mergedRow._isIdentical
+            };
+            
+            headers.forEach(header => {
+                if (header === 'Provider A') {
+                    row[header] = mergedRow['_provider (A)'];
+                } else if (header === 'Provider B') {
+                    row[header] = mergedRow['_provider (B)'];
+                } else if (header === 'Status') {
+                    row[header] = mergedRow._isIdentical ? 'Identical' : 'Different';
+                } else if (header === 'Difference Score') {
+                    row[header] = mergedRow._differenceScore;
+                } else {
+                    row[header] = mergedRow[header];
+                }
+            });
+            
+            return row;
+        });
+        
+        return { headers, rows: tableRows };
+    }
+
+    /**
+     * Compare outputs for the same input
+     */
+    compareOutputs(resultA, resultB, inputObj) {
+        const outputA = resultA.output || '';
+        const outputB = resultB.output || '';
+        
+        // Calculate various difference metrics
+        const lengthDiff = Math.abs(outputA.length - outputB.length);
+        const lengthRatio = outputA.length > 0 ? outputB.length / outputA.length : 1;
+        
+        // Simple word-based difference (basic implementation)
+        const wordsA = typeof outputA === 'string' ? outputA.split(/\s+/) : [String(outputA)];
+        const wordsB = typeof outputB === 'string' ? outputB.split(/\s+/) : [String(outputB)];
+        const wordDiff = Math.abs(wordsA.length - wordsB.length);
+        
+        // Calculate similarity score (0 = identical, higher = more different)
+        let differenceScore = 0;
+        differenceScore += lengthDiff * 0.1; // Length difference weight
+        differenceScore += Math.abs(1 - lengthRatio) * 100; // Length ratio weight
+        differenceScore += wordDiff * 2; // Word count difference weight
+        
+        // Check if outputs are exactly the same
+        const isIdentical = outputA === outputB;
+        
+        // Try to parse as JSON for structured comparison
+        let structuredDiff = null;
+        try {
+            const parsedA = typeof outputA === 'string' ? JSON.parse(outputA) : outputA;
+            const parsedB = typeof outputB === 'string' ? JSON.parse(outputB) : outputB;
+            structuredDiff = this.compareStructuredData(parsedA, parsedB);
+        } catch (e) {
+            // Not JSON, use text comparison
+        }
+        
+        return {
+            input: inputObj,
+            resultA: {
+                output: outputA,
+                provider: resultA.provider,
+                templateId: resultA.templateId,
+                length: outputA.length,
+                wordCount: wordsA.length
+            },
+            resultB: {
+                output: outputB,
+                provider: resultB.provider,
+                templateId: resultB.templateId,
+                length: outputB.length,
+                wordCount: wordsB.length
+            },
+            differences: {
+                isIdentical,
+                lengthDiff,
+                lengthRatio: this.round(lengthRatio, 3),
+                wordDiff,
+                differenceScore: this.round(differenceScore, 2)
+            },
+            structuredDiff
+        };
+    }
+
+    /**
+     * Compare structured data (JSON objects)
+     */
+    compareStructuredData(objA, objB) {
+        const differences = [];
+        const allKeys = new Set([...Object.keys(objA || {}), ...Object.keys(objB || {})]);
+        
+        for (const key of allKeys) {
+            const valueA = objA?.[key];
+            const valueB = objB?.[key];
+            
+            if (valueA !== valueB) {
+                differences.push({
+                    key,
+                    valueA: valueA !== undefined ? valueA : '(missing)',
+                    valueB: valueB !== undefined ? valueB : '(missing)',
+                    type: typeof valueA === typeof valueB ? typeof valueA : 'type_mismatch'
+                });
+            }
+        }
+        
+        return {
+            totalKeys: allKeys.size,
+            differentKeys: differences.length,
+            differences: differences.slice(0, 10) // Limit for display
+        };
+    }
+
+    /**
+     * Summarize identical inputs analysis
+     */
+    summarizeIdenticalInputs(mergedRows) {
+        if (mergedRows.length === 0) {
+            return {
+                identicalOutputs: 0,
+                differentOutputs: 0,
+                avgDifferenceScore: 0,
+                maxDifferenceScore: 0,
+                commonProviders: []
+            };
+        }
+        
+        const identicalOutputs = mergedRows.filter(row => row._isIdentical).length;
+        const differentOutputs = mergedRows.length - identicalOutputs;
+        const scores = mergedRows.map(row => row._differenceScore);
+        const avgDifferenceScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+        const maxDifferenceScore = Math.max(...scores);
+        
+        // Find common provider combinations
+        const providerPairs = mergedRows.map(row => `${row._provider_A} → ${row._provider_B}`);
+        const providerCounts = {};
+        providerPairs.forEach(pair => {
+            providerCounts[pair] = (providerCounts[pair] || 0) + 1;
+        });
+        
+        const commonProviders = Object.entries(providerCounts)
+            .sort(([, a], [, b]) => b - a)
+            .slice(0, 5)
+            .map(([pair, count]) => ({ pair, count }));
+        
+        return {
+            identicalOutputs,
+            differentOutputs,
+            avgDifferenceScore: this.round(avgDifferenceScore, 2),
+            maxDifferenceScore: this.round(maxDifferenceScore, 2),
+            commonProviders
+        };
     }
 
     /**
@@ -3279,6 +3623,10 @@ class PromptRunnerApp {
         }
         this.displayTextLengthComparisons(comparison.textLength || {});
         
+        // Display identical inputs analysis
+        console.log("Displaying identical inputs analysis:", comparison.identicalInputs);
+        this.displayIdenticalInputsAnalysis(comparison.identicalInputs);
+        
         // Display significance tests
         this.displaySignificanceTests(comparison);
     }
@@ -3459,7 +3807,7 @@ class PromptRunnerApp {
                             <strong>Chi-Square Test Result:</strong>
                             <span class="significance-indicator ${chiSquareTest.significant ? 'significant' : 'not-significant'}" style="padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; color: white; background: ${chiSquareTest.significant ? 'var(--accent-danger)' : 'var(--accent-success)'};">
                                 ${chiSquareTest.significant ? 'SIGNIFICANT' : 'NOT SIGNIFICANT'}
-                            </span>
+                        </span>
                         </div>
                         <div style="font-size: 12px; color: var(--text-muted);">
                             χ² = ${chiSquareTest.chiSquareValue}, p = ${chiSquareTest.pValue} 
@@ -3492,23 +3840,23 @@ class PromptRunnerApp {
         return `
             <div style="max-height: 300px; overflow-y: auto;">
                 ${topEntries.map(([value, data]) => {
-                    const count = data[setKey].count;
-                    const percentage = data[setKey].percentage;
+            const count = data[setKey].count;
+            const percentage = data[setKey].percentage;
                     const barWidth = maxCount > 0 ? Math.max(2, Math.round(80 * count / maxCount)) : 2;
-                    
-                    return `
+            
+            return `
                         <div style="display: flex; align-items: center; margin-bottom: 6px; font-size: 11px;">
                             <div style="min-width: 80px; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 8px;" title="${this.escapeHtml(value)}">
                                 ${this.escapeHtml(value)}
-                            </div>
+                </div>
                             <div style="flex: 1; background: var(--bg-muted); height: 14px; border-radius: 7px; overflow: hidden; margin-right: 8px;">
                                 <div style="width: ${barWidth}%; height: 100%; background: linear-gradient(90deg, var(--accent-primary), var(--accent-primary-light)); border-radius: 7px;"></div>
                             </div>
                             <div style="min-width: 60px; text-align: right; color: var(--text-secondary);">
-                                ${count} (${this.round(percentage)}%)
+                    ${count} (${this.round(percentage)}%)
                             </div>
-                        </div>
-                    `;
+                </div>
+            `;
                 }).join('')}
                 ${remainingCount > 0 ? `
                     <div style="text-align: center; margin-top: 8px; font-size: 10px; color: var(--text-muted); font-style: italic;">
@@ -3654,6 +4002,217 @@ class PromptRunnerApp {
         } else {
             console.error('Could not find comparison details container for text length analysis');
         }
+    }
+
+    /**
+     * Display identical inputs analysis
+     */
+    displayIdenticalInputsAnalysis(identicalInputsData) {
+        // Clear any existing identical inputs analysis
+        const existingSection = document.querySelector('.comparison-details .identical-inputs-section');
+        if (existingSection) {
+            existingSection.remove();
+        }
+        
+        if (!identicalInputsData || identicalInputsData.totalMatches === 0) {
+            // Still show a section indicating no matches were found
+            const detailsContainer = document.querySelector('.comparison-details');
+            if (detailsContainer) {
+                const html = `
+                    <div class="comparison-section identical-inputs-section">
+                        <h4>🔄 Identical Input Analysis</h4>
+                        <div class="no-matches-message">
+                            <p>No identical inputs found between the two result sets.</p>
+                            <p class="text-muted">This analysis compares outputs for the same input values to identify how different providers or configurations handle identical prompts.</p>
+                        </div>
+                    </div>
+                `;
+                detailsContainer.insertAdjacentHTML('beforeend', html);
+            }
+            return;
+        }
+
+        console.log("Found identical inputs data:", identicalInputsData);
+
+        const { totalMatches, matches, mergedTable, summary } = identicalInputsData;
+
+        let html = `
+            <div class="comparison-section identical-inputs-section">
+                <h4>🔄 Identical Input Analysis</h4>
+                
+                <!-- Summary Statistics -->
+                <div class="identical-inputs-summary">
+                    <div class="summary-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Total Matches:</span>
+                            <span class="stat-value">${totalMatches}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Unique Inputs:</span>
+                            <span class="stat-value">${identicalInputsData.uniqueInputs}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Identical Outputs:</span>
+                            <span class="stat-value success">${summary.identicalOutputs}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Different Outputs:</span>
+                            <span class="stat-value ${summary.differentOutputs > 0 ? 'warning' : 'success'}">${summary.differentOutputs}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Avg Difference Score:</span>
+                            <span class="stat-value">${summary.avgDifferenceScore}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Merged Table View -->
+                <div class="identical-inputs-table-container">
+                    <h5>Merged Comparison Table (${totalMatches} rows, ${identicalInputsData.uniqueInputs} unique inputs)</h5>
+                    <p class="table-description">Shows all results with matching inputs, with output columns side-by-side for comparison.</p>
+                    <div class="data-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    ${mergedTable.headers.map(header => `<th>${this.escapeHtml(header)}</th>`).join('')}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${mergedTable.rows.map(row => `
+                                    <tr class="${row._isIdentical ? 'identical-row' : 'different-row'}">
+                                        ${mergedTable.headers.map(header => {
+                                            const raw = String(row[header] ?? '');
+                                            const safe = this.escapeHtml(raw);
+                                            const display = this.formatIdenticalInputCell(row[header], header);
+                                            return `<td class=\"cell-content\" data-full=\"${safe}\" title=\"\">${display}</td>`;
+                                        }).join('')}
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Insert into comparison details
+        const detailsContainer = document.querySelector('.comparison-details');
+        if (detailsContainer) {
+            detailsContainer.insertAdjacentHTML('beforeend', html);
+            this.setupCellHoverTooltips();
+        } else {
+            console.error('Could not find comparison details container for identical inputs analysis');
+        }
+    }
+
+    /**
+     * Setup floating tooltip that shows full cell content on hover
+     */
+    setupCellHoverTooltips() {
+        // Create tooltip element once
+        let tooltip = document.getElementById('cell-hover-tooltip');
+        if (!tooltip) {
+            tooltip = document.createElement('div');
+            tooltip.id = 'cell-hover-tooltip';
+            tooltip.className = 'cell-hover-tooltip hidden';
+            document.body.appendChild(tooltip);
+        }
+
+        const container = document.querySelector('#compare-results-modal .identical-inputs-section');
+        if (!container) return;
+
+        const onMouseMove = (e) => {
+            const target = e.target.closest('td.cell-content');
+            if (!target || !container.contains(target)) {
+                tooltip.classList.add('hidden');
+                return;
+            }
+
+            const full = target.getAttribute('data-full') || '';
+            if (!full) {
+                tooltip.classList.add('hidden');
+                return;
+            }
+
+            tooltip.innerText = full;
+            tooltip.classList.remove('hidden');
+
+            const padding = 12;
+            let x = e.clientX + padding;
+            let y = e.clientY + padding;
+
+            const rect = tooltip.getBoundingClientRect();
+            const vw = window.innerWidth;
+            const vh = window.innerHeight;
+
+            if (x + rect.width > vw - 8) x = Math.max(8, vw - rect.width - 8);
+            if (y + rect.height > vh - 8) y = Math.max(8, vh - rect.height - 8);
+
+            tooltip.style.left = x + 'px';
+            tooltip.style.top = y + 'px';
+        };
+
+        const onLeave = () => {
+            tooltip.classList.add('hidden');
+        };
+
+        container.addEventListener('mousemove', onMouseMove);
+        container.addEventListener('mouseleave', onLeave);
+    }
+
+    /**
+     * Format cell content for identical inputs table
+     */
+    formatIdenticalInputCell(value, columnHeader) {
+        if (value === null || value === undefined || value === '') {
+            return '<span class="empty-cell">—</span>';
+        }
+
+        // Handle status column
+        if (columnHeader === 'Status') {
+            if (value === 'Identical') {
+                return '<span class="status-badge identical">✓ Identical</span>';
+            } else {
+                return '<span class="status-badge different">⚠ Different</span>';
+            }
+        }
+
+        // Handle difference metrics
+        if (columnHeader === 'Length Diff' || columnHeader === 'Word Diff') {
+            const numValue = Number(value);
+            if (numValue === 0) {
+                return '<span class="metric-good">0</span>';
+            } else {
+                return `<span class="metric-diff">${value}</span>`;
+            }
+        }
+
+        // Handle ratio
+        if (columnHeader === 'Length Ratio') {
+            const numValue = Number(value);
+            if (numValue === 1) {
+                return '<span class="metric-good">1.000</span>';
+            } else {
+                return `<span class="metric-diff">${value}</span>`;
+            }
+        }
+
+        // Handle long content
+        const stringValue = String(value);
+        if (stringValue.length > 100) {
+            return `<span class="truncated-content">${this.escapeHtml(stringValue.substring(0, 100))}...</span>`;
+        }
+
+        // Handle objects
+        if (typeof value === 'object') {
+            const jsonStr = JSON.stringify(value);
+            if (jsonStr.length > 100) {
+                return `<span class="truncated-content">${this.escapeHtml(jsonStr.substring(0, 100))}...</span>`;
+            }
+            return `<code class="json-cell">${this.escapeHtml(jsonStr)}</code>`;
+        }
+
+        return this.escapeHtml(stringValue);
     }
 
     /**
